@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { translations, type Language } from '../i18n/translations';
-import { generateAIRecommendation, type AIResponse } from '../data/mockMarineData';
+import {
+  generateDynamicAIResponse,
+  type ChatHistoryMessage,
+} from '../data/mockMarineData';
 import {
   Bot,
   User,
@@ -12,20 +15,16 @@ import {
   HelpCircle,
   RefreshCw,
   Zap,
+  CloudSun,
+  ShieldCheck,
+  Navigation,
+  Compass,
 } from 'lucide-react';
 
 interface AIAssistantViewProps {
   currentLang: Language;
   initialQuery?: string;
   isOffline: boolean;
-}
-
-interface ChatMessage {
-  id: string;
-  sender: 'user' | 'orca';
-  text?: string;
-  recommendation?: AIResponse;
-  timestamp: string;
 }
 
 export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
@@ -48,9 +47,14 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
 
-  // Initial chat history with default demo recommendation preloaded
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const rec = generateAIRecommendation(defaultUserQuery, currentLang, isOffline);
+  // Maintain conversation history for multi-turn intent & context tracking
+  const [messages, setMessages] = useState<ChatHistoryMessage[]>(() => {
+    const initialResponse = generateDynamicAIResponse(
+      defaultUserQuery,
+      currentLang,
+      isOffline,
+      []
+    );
     return [
       {
         id: 'msg-1',
@@ -61,15 +65,20 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
       {
         id: 'msg-2',
         sender: 'orca',
-        recommendation: rec,
+        recommendation: initialResponse,
         timestamp: '06:30 AM',
       },
     ];
   });
 
-  // Re-generate message localization if language changes
+  // Re-localize if language changes
   useEffect(() => {
-    const rec = generateAIRecommendation(defaultUserQuery, currentLang, isOffline);
+    const initialResponse = generateDynamicAIResponse(
+      defaultUserQuery,
+      currentLang,
+      isOffline,
+      []
+    );
     setMessages([
       {
         id: 'msg-1',
@@ -80,11 +89,10 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
       {
         id: 'msg-2',
         sender: 'orca',
-        recommendation: rec,
+        recommendation: initialResponse,
         timestamp: '06:30 AM',
       },
     ]);
-    setExpandedWhyId('msg-2');
   }, [currentLang, isOffline]);
 
   const handleSend = (queryToSend?: string) => {
@@ -92,7 +100,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
     if (!q || isAnalyzing) return;
 
     const userMsgId = `user-${Date.now()}`;
-    const userMsg: ChatMessage = {
+    const userMsg: ChatHistoryMessage = {
       id: userMsgId,
       sender: 'user',
       text: q,
@@ -103,21 +111,32 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
     setInputQuery('');
     setIsAnalyzing(true);
 
-    // Simulate 1.2s AI inference processing delay
+    // Simulate 1s AI intent-classification & marine telemetry inference
     setTimeout(() => {
-      const rec = generateAIRecommendation(q, currentLang, isOffline);
-      const botMsgId = `orca-${Date.now()}`;
-      const botMsg: ChatMessage = {
-        id: botMsgId,
-        sender: 'orca',
-        recommendation: rec,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+      setMessages((currentMessages) => {
+        const response = generateDynamicAIResponse(
+          q,
+          currentLang,
+          isOffline,
+          currentMessages
+        );
 
-      setMessages((prev) => [...prev, botMsg]);
+        const botMsgId = `orca-${Date.now()}`;
+        const botMsg: ChatHistoryMessage = {
+          id: botMsgId,
+          sender: 'orca',
+          recommendation: response,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
+        if (response.intent === 'WHY_EXPLANATION') {
+          setExpandedWhyId(botMsgId);
+        }
+
+        return [...currentMessages, botMsg];
+      });
       setIsAnalyzing(false);
-      setExpandedWhyId(botMsgId);
-    }, 1200);
+    }, 1000);
   };
 
   const suggestedQuestions = [
@@ -126,6 +145,9 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
     t.ai.questions.q3,
     t.ai.questions.q4,
     t.ai.questions.q5,
+    t.ai.questions.q6,
+    t.ai.questions.q7,
+    t.ai.questions.q8,
   ];
 
   return (
@@ -151,11 +173,11 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
 
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-800">
           <Zap className="w-4 h-4 text-cyan-400" />
-          <span>ISRO PFZ & IMD Fusion AI</span>
+          <span>Multi-Intent & Context AI Active</span>
         </div>
       </div>
 
-      {/* Suggested Quick Question Chips */}
+      {/* Suggested Intent Prompts */}
       <div className="space-y-2">
         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
           {t.ai.suggestedQuestionsTitle}:
@@ -165,7 +187,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
             <button
               key={idx}
               onClick={() => handleSend(q)}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-cyan-950/60 border border-cyan-500/20 hover:border-cyan-400 text-xs text-slate-200 hover:text-cyan-300 transition-all font-medium flex items-center gap-1.5 shadow-sm text-left"
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-cyan-950/60 border border-cyan-500/20 hover:border-cyan-400 text-xs text-slate-200 hover:text-cyan-300 transition-all font-medium flex items-center gap-1.5 shadow-sm text-left cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <span>{q}</span>
@@ -174,7 +196,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
         </div>
       </div>
 
-      {/* Chat Messages Feed */}
+      {/* Dynamic Chat Messages Feed */}
       <div className="space-y-4 min-h-[380px]">
         {messages.map((msg) => {
           if (msg.sender === 'user') {
@@ -204,130 +226,292 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
               </div>
 
               <div className="flex-1 rounded-2xl glass-panel-accent border-cyan-500/30 p-5 space-y-4 text-slate-100 shadow-2xl">
-                {/* Header Title & Timestamp */}
+                {/* Intent & Context Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-cyan-500/20">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
                     <span className="font-black text-sm text-cyan-300">
-                      {t.ai.recommendationTitle}
+                      {t.ai.recommendationTitle} — <span className="uppercase text-xs text-emerald-400">{rec.intent} INTENT</span>
                     </span>
                   </div>
                   <span className="text-xs font-mono text-slate-400">{msg.timestamp}</span>
                 </div>
 
-                {/* Summary Text */}
+                {/* Resolved Context Badge if present */}
+                {rec.contextResolved && (
+                  <div className="px-3 py-1 rounded-lg bg-slate-900 border border-cyan-500/30 text-[11px] text-cyan-300 font-mono flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Context Resolved: {rec.contextResolved}</span>
+                  </div>
+                )}
+
+                {/* Conversational Text Summary */}
                 <p className="text-xs sm:text-sm font-semibold text-slate-200 leading-relaxed bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
                   {rec.summary}
                 </p>
 
-                {/* Structured Recommendation Key Metrics */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-gradient-to-br from-slate-900 to-cyan-950/50 border border-cyan-500/30 text-xs">
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-medium">
-                      {t.dashboard.recommendedZone}
-                    </span>
-                    <strong className="text-cyan-300 text-sm font-bold block mt-0.5">
-                      {rec.recommendedZone}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-medium">
-                      {t.ai.suitabilityScore}
-                    </span>
-                    <strong className="text-emerald-400 text-base font-black block mt-0.5">
-                      {rec.suitabilityScore}%
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-medium">
-                      {t.ai.safetyRisk}
-                    </span>
-                    <strong className="text-emerald-400 text-sm font-bold block mt-0.5 uppercase">
-                      {rec.safetyRisk}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-medium">
-                      {t.dashboard.distance} & {t.dashboard.travelTime}
-                    </span>
-                    <strong className="text-slate-200 text-sm font-mono block mt-0.5">
-                      {rec.distanceKm} km ({rec.travelTimeMin} min)
-                    </strong>
-                  </div>
-                </div>
+                {/* DYNAMIC INTENT CARDS RENDERING */}
 
-                {/* Key Ocean Reasons List */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-300 block">
-                    {t.ai.keyReasons}:
-                  </span>
-                  <ul className="space-y-1.5 text-xs text-slate-200">
-                    {rec.reasons.map((reason, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span>{reason}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {/* 1. GREETING CARD */}
+                {rec.intent === 'GREETING' && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3">
+                    <span className="text-xs font-bold text-slate-300">Suggested Quick Actions:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSend(t.ai.questions.q1)}
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Find Best Fishing Zone</span>
+                      </button>
+                      <button
+                        onClick={() => handleSend(t.ai.questions.q3)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
+                      >
+                        <CloudSun className="w-3.5 h-3.5" />
+                        <span>Check Weather Forecast</span>
+                      </button>
+                      <button
+                        onClick={() => handleSend(t.ai.questions.q2)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Check Safety & Waves</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. WEATHER CARD */}
+                {rec.intent === 'WEATHER' && rec.weatherData && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-sky-500/30 text-xs">
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Air Temp</span>
+                      <strong className="text-amber-400 text-sm">{rec.weatherData.airTemp} °C</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Wind Speed</span>
+                      <strong className="text-sky-400 text-sm">{rec.weatherData.windSpeed} km/h (NE)</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Wave Height</span>
+                      <strong className="text-blue-400 text-sm">{rec.weatherData.waveHeight} m</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Optimal Window</span>
+                      <strong className="text-emerald-400 text-xs">{rec.weatherData.forecastWindow}</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. SAFETY CARD */}
+                {rec.intent === 'SAFETY' && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-300">Safety Risk Score</span>
+                      <span className="px-3 py-1 font-black text-xs bg-emerald-500 text-slate-950 rounded-full">
+                        {rec.safetyRisk}
+                      </span>
+                    </div>
+                    {rec.reasons && (
+                      <ul className="space-y-1.5 text-xs text-slate-200">
+                        {rec.reasons.map((r, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {/* 4. CYCLONE CARD */}
+                {rec.intent === 'CYCLONE' && rec.cycloneData && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-red-500/40 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-red-400 font-bold">
+                      <span>{rec.cycloneData.name}</span>
+                      <span className="px-2 py-0.5 text-[10px] bg-red-600/30 text-red-300 rounded border border-red-500/50">
+                        145 KM OFFSHORE
+                      </span>
+                    </div>
+                    <p className="text-slate-300">{rec.cycloneData.status}</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="p-2 rounded bg-slate-950 text-slate-300">
+                        Wind: <strong className="text-red-400">{rec.cycloneData.windSpeedKmh} km/h</strong>
+                      </div>
+                      <div className="p-2 rounded bg-slate-950 text-slate-300">
+                        Danger Radius: <strong className="text-amber-400">{rec.cycloneData.dangerRadiusKm} km</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. ROUTE CARD */}
+                {rec.intent === 'ROUTE' && rec.routeData && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
+                    <div className="flex items-center justify-between font-bold text-cyan-300">
+                      <span className="flex items-center gap-1.5">
+                        <Navigation className="w-4 h-4" />
+                        <span>{rec.routeData.from} ➔ {rec.routeData.to}</span>
+                      </span>
+                      <span className="text-emerald-400 uppercase">{rec.routeData.routeRisk}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-slate-200">
+                      <div className="p-2.5 rounded-lg bg-slate-950">
+                        <span className="text-slate-400 text-[11px] block">Distance</span>
+                        <strong className="text-cyan-300 text-sm">{rec.routeData.distanceKm} km</strong>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950">
+                        <span className="text-slate-400 text-[11px] block">Est. Travel Time</span>
+                        <strong className="text-slate-200 text-sm">{rec.routeData.travelTimeMin} min</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. MARINE CONDITIONS CARD */}
+                {rec.intent === 'MARINE_CONDITIONS' && rec.marineData && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-teal-500/30 text-xs">
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">SST</span>
+                      <strong className="text-cyan-300 text-sm">{rec.marineData.sst} °C</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Chlorophyll</span>
+                      <strong className="text-emerald-400 text-sm">{rec.marineData.chlorophyllIndex}%</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Current Speed</span>
+                      <strong className="text-slate-200 text-sm">{rec.marineData.currentSpeed} kn</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-950">
+                      <span className="text-slate-400 block text-[11px]">Sea Visibility</span>
+                      <strong className="text-slate-200 text-sm">{rec.marineData.visibilityKm} km</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. FISHING RECOMMENDATION CARD */}
+                {(rec.intent === 'FISHING_ZONE' ||
+                  rec.intent === 'FISHING_RECOMMENDATION' ||
+                  rec.intent === 'GENERAL_MARINE' ||
+                  rec.intent === 'UNKNOWN') && (
+                  <>
+                    {rec.recommendedZone && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-gradient-to-br from-slate-900 to-cyan-950/50 border border-cyan-500/30 text-xs">
+                        <div>
+                          <span className="text-slate-400 block text-[11px] font-medium">
+                            {t.dashboard.recommendedZone}
+                          </span>
+                          <strong className="text-cyan-300 text-sm font-bold block mt-0.5">
+                            {rec.recommendedZone}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[11px] font-medium">
+                            {t.ai.suitabilityScore}
+                          </span>
+                          <strong className="text-emerald-400 text-base font-black block mt-0.5">
+                            {rec.suitabilityScore}%
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[11px] font-medium">
+                            {t.ai.safetyRisk}
+                          </span>
+                          <strong className="text-emerald-400 text-sm font-bold block mt-0.5 uppercase">
+                            {rec.safetyRisk}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[11px] font-medium">
+                            {t.dashboard.distance} & {t.dashboard.travelTime}
+                          </span>
+                          <strong className="text-slate-200 text-sm font-mono block mt-0.5">
+                            {rec.distanceKm} km ({rec.travelTimeMin} min)
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.reasons && (
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-slate-300 block">
+                          {t.ai.keyReasons}:
+                        </span>
+                        <ul className="space-y-1.5 text-xs text-slate-200">
+                          {rec.reasons.map((reason, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                              <span>{reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {/* Expandable "Why this recommendation?" Section */}
-                <div className="pt-2">
-                  <button
-                    onClick={() => setExpandedWhyId(isWhyOpen ? null : msg.id)}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-cyan-500/30 text-xs font-bold text-cyan-300 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4 text-cyan-400" />
-                      <span>{t.ai.whyRecommendation}</span>
-                    </div>
-                    {isWhyOpen ? (
-                      <ChevronUp className="w-4 h-4 text-cyan-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-cyan-400" />
-                    )}
-                  </button>
+                {rec.whyExplanation && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setExpandedWhyId(isWhyOpen ? null : msg.id)}
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-cyan-500/30 text-xs font-bold text-cyan-300 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <HelpCircle className="w-4 h-4 text-cyan-400" />
+                        <span>{t.ai.whyRecommendation}</span>
+                      </div>
+                      {isWhyOpen ? (
+                        <ChevronUp className="w-4 h-4 text-cyan-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-cyan-400" />
+                      )}
+                    </button>
 
-                  {isWhyOpen && (
-                    <div className="mt-2.5 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-2.5 text-slate-300 animate-fadeIn">
-                      <div className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0"></span>
-                        <p>
-                          <strong className="text-cyan-300">Sea Surface Temperature (SST):</strong>{' '}
-                          {rec.whyExplanation.sstNote}
-                        </p>
+                    {isWhyOpen && (
+                      <div className="mt-2.5 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-2.5 text-slate-300 animate-fadeIn">
+                        <div className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0"></span>
+                          <p>
+                            <strong className="text-cyan-300">Sea Surface Temperature (SST):</strong>{' '}
+                            {rec.whyExplanation.sstNote}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
+                          <p>
+                            <strong className="text-emerald-300">Chlorophyll & Phytoplankton:</strong>{' '}
+                            {rec.whyExplanation.chlorophyllNote}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full bg-sky-400 mt-1.5 shrink-0"></span>
+                          <p>
+                            <strong className="text-sky-300">Wind & Weather Conditions:</strong>{' '}
+                            {rec.whyExplanation.weatherNote}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></span>
+                          <p>
+                            <strong className="text-blue-300">Wave Intensity & Swell:</strong>{' '}
+                            {rec.whyExplanation.waveNote}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
+                          <p>
+                            <strong className="text-amber-300">Cyclone Safety Radius:</strong>{' '}
+                            {rec.whyExplanation.cycloneNote}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
-                        <p>
-                          <strong className="text-emerald-300">Chlorophyll & Phytoplankton:</strong>{' '}
-                          {rec.whyExplanation.chlorophyllNote}
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full bg-sky-400 mt-1.5 shrink-0"></span>
-                        <p>
-                          <strong className="text-sky-300">Wind & Weather Conditions:</strong>{' '}
-                          {rec.whyExplanation.weatherNote}
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></span>
-                        <p>
-                          <strong className="text-blue-300">Wave Intensity & Swell:</strong>{' '}
-                          {rec.whyExplanation.waveNote}
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
-                        <p>
-                          <strong className="text-amber-300">Cyclone Safety Radius:</strong>{' '}
-                          {rec.whyExplanation.cycloneNote}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -342,7 +526,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
         )}
       </div>
 
-      {/* Message Input Box */}
+      {/* Message Input Form */}
       <div className="sticky bottom-4 z-20">
         <form
           onSubmit={(e) => {

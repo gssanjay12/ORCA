@@ -48,12 +48,26 @@ export interface TranslationSchema {
     suitabilityScore: string;
     safetyRisk: string;
     recommendationTitle: string;
+    contextResolvedNote: string;
     questions: {
       q1: string;
       q2: string;
       q3: string;
       q4: string;
       q5: string;
+      q6: string;
+      q7: string;
+      q8: string;
+    };
+    intents: {
+      greeting: string;
+      weatherSummary: string;
+      safetySummary: string;
+      cycloneSummary: string;
+      routeSummary: string;
+      marineSummary: string;
+      whySummary: string;
+      unknownClarification: string;
     };
   };
   weather: {
@@ -176,21 +190,35 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     ai: {
       title: "ORCA AI Marine Assistant",
-      subtitle: "Ask questions in regional language for instant marine & fishing route analysis",
-      inputPlaceholder: "Ask ORCA about weather, safe zones, or fishing conditions...",
-      analyzing: "Analyzing marine conditions, ocean currents & cyclone telemetry...",
+      subtitle: "Context-Aware Dynamic Conversational AI for Marine Navigation & Fishing",
+      inputPlaceholder: "Ask about weather, safety, route to zone, cyclone, or fishing zones...",
+      analyzing: "Detecting intent & processing marine context...",
       suggestedQuestionsTitle: "Suggested Questions",
       whyRecommendation: "Why this recommendation?",
       keyReasons: "Key Ocean & Weather Factors",
       suitabilityScore: "Fishing Suitability Score",
       safetyRisk: "Safety Risk Assessment",
-      recommendationTitle: "ORCA AI Recommendation",
+      recommendationTitle: "ORCA Intelligence Analysis",
+      contextResolvedNote: "Context Resolved: Referring to Zone A (North East Shelf)",
       questions: {
         q1: "Where should I fish tomorrow morning?",
-        q2: "Is it safe to go fishing today?",
-        q3: "Show me the best fishing zones.",
-        q4: "What is the weather forecast for tomorrow?",
+        q2: "Is it safe to go fishing?",
+        q3: "What is the weather forecast for tomorrow?",
+        q4: "Show me the route to Zone A.",
         q5: "Why did you recommend Zone A?",
+        q6: "Where is the cyclone currently located?",
+        q7: "What are the marine conditions (SST & Chlorophyll)?",
+        q8: "Vanakkam ORCA!",
+      },
+      intents: {
+        greeting: "Greetings Captain! I am ORCA, your AI Marine Assistant. How can I assist your voyage today?",
+        weatherSummary: "Weather Forecast for Chennai Coast: Clear skies tomorrow morning with 14.2 km/h NE winds and 1.1m wave swell. Favorable fishing window from 06:00 to 11:00 AM.",
+        safetySummary: "Safety Risk Assessment for Zone A (North East Shelf): LOW RISK. Wind and swell conditions remain well within safe operating limits.",
+        cycloneSummary: "Cyclonic Storm VARUNA is currently 145 km East-Southeast of Chennai moving North-East. No direct threat to Zone A.",
+        routeSummary: "Optimal Route from Chennai Harbor to Zone A (North East Shelf): Distance 18.4 km, estimated travel duration 52 minutes. Route Safety: LOW RISK.",
+        marineSummary: "Current Marine Parameters: Sea Surface Temperature (SST) is 28.2°C, Chlorophyll index is 88%, Current velocity is 0.8 knots SW.",
+        whySummary: "Zone A is recommended due to optimal Sea Surface Temperature (28.2°C), high chlorophyll concentration (88%), gentle swell (1.1m), and safe distance from Cyclone VARUNA.",
+        unknownClarification: "I didn't quite understand that. Would you like to check tomorrow's weather, safe fishing zones, cyclone status, or route navigation?",
       },
     },
     weather: {
@@ -311,21 +339,35 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     ai: {
       title: "ஆர்கா AI கடல் உதவியாளர்",
-      subtitle: "உங்கள் தாய்மொழியில் கேள்வி கேட்டு உடனுக்குடன் மீன்பிடி & பாதுகாப்பு வழிகாட்டுதலைப் பெறுங்கள்",
-      inputPlaceholder: "வானிலை, பாதுகாப்பான மண்டலம் அல்லது மீன்பிடி நிலவரம் பற்றிக் கேளுங்கள்...",
-      analyzing: "கடல் நிலைமைகள், நீரோட்டம் மற்றும் புயல் தரவுகளை ஆய்வு செய்கிறது...",
+      subtitle: "கேள்விகளின் நோக்கத்தை உணர்ந்து துல்லியமான கடல் மற்றும் பாதுகாப்பு வழிகாட்டுதலை அளிக்கும் AI",
+      inputPlaceholder: "வானிலை, பாதுகாப்பு, பாதை அல்லது மீன்பிடி மண்டலங்கள் பற்றிக் கேளுங்கள்...",
+      analyzing: "கேள்வியின் நோக்கத்தை பகுப்பாய்வு செய்து தரவுகளை பெறுகிறது...",
       suggestedQuestionsTitle: "பரிந்துரைக்கப்பட்ட கேள்விகள்",
       whyRecommendation: "இந்த பரிந்துரை ஏன்?",
       keyReasons: "முக்கிய கடல் மற்றும் வானிலை காரணிகள்",
       suitabilityScore: "மீன்பிடி பொருத்தமான மதிப்பெண்",
       safetyRisk: "பாதுகாப்பு அபாய மதிப்பீடு",
-      recommendationTitle: "ஆர்கா AI வழிகாட்டுதல்",
+      recommendationTitle: "ஆர்கா AI பகுப்பாய்வு",
+      contextResolvedNote: "தொடர்பு நிலை உறுதி செய்யப்பட்டது: மண்டலம் A (North East Shelf)",
       questions: {
         q1: "நாளை காலை மீன்பிடிக்க எந்த இடத்திற்கு செல்லலாம்?",
         q2: "இன்று மீன்பிடிக்கச் செல்வது பாதுகாப்பானதா?",
-        q3: "மிகச்சிறந்த மீன்பிடி மண்டலங்களைக் காட்டு.",
-        q4: "நாளை வானிலை எப்படி இருக்கும்?",
+        q3: "நாளை வானிலை எப்படி இருக்கும்?",
+        q4: "மண்டலம் A-விற்கான பாதையைக் காட்டு.",
         q5: "மண்டலம் A-வை ஏன் பரிந்துரை செய்தீர்கள்?",
+        q6: "புயல் தற்போது எங்கே உள்ளது?",
+        q7: "கடல் நிலைமைகள் (SST & குளோரோபில்) எப்படி உள்ளது?",
+        q8: "வணக்கம் ஆர்கா!",
+      },
+      intents: {
+        greeting: "வணக்கம் கேப்டன்! நான் ஆர்கா (ORCA), உங்கள் AI கடல் உதவியாளர். உங்கள் இன்றைய கடல் பயணத்திற்கு நான் எவ்வாறு உதவட்டும்?",
+        weatherSummary: "சென்னை கடற்கரை வானிலை கணிப்பு: நாளை காலை தெளிவான வானிலை, 14.2 km/h வடகிழக்கு காற்று மற்றும் 1.1m அலை உயரம் இருக்கும். காலை 06:00 முதல் 11:00 மணி வரை உகந்த நேரம்.",
+        safetySummary: "மண்டலம் A (North East Shelf) பாதுகாப்பு அபாய மதிப்பீடு: குறைந்த அபாயம் (LOW RISK). காற்று மற்றும் அலைகள் பாதுகாப்பான எல்லைக்குள் உள்ளன.",
+        cycloneSummary: "வருணா புயல் தற்போது சென்னைக்கு கிழக்கு-தென்கிழக்கே 145 கி.மீ தொலைவில் வடகிழக்கு நோக்கி நகர்கிறது. மண்டலம் A-விற்கு எவ்வித நேரடி ஆபத்தும் இல்லை.",
+        routeSummary: "சென்னை துறைமுகத்திலிருந்து மண்டலம் A-விற்கான உகந்த பாதை: தூரம் 18.4 கி.மீ, பயண நேரம் 52 நிமிடங்கள். பாதை பாதுகாப்பு: குறைந்த அபாயம்.",
+        marineSummary: "தற்போதைய கடல் அளவுருக்கள்: கடல் பரப்பு வெப்பநிலை (SST) 28.2°C, குளோரோபில் குறியீடு 88%, நீரோட்ட வேகம் 0.8 நாட்ஸ் SW.",
+        whySummary: "மண்டலம் A உகந்த கடல் வெப்பநிலை (28.2°C), அதிக குளோரோபில் செறிவு (88%), குறைந்த அலை (1.1m) மற்றும் புயல் பாதுகாப்பு தூரம் காரணமாக பரிந்துரைக்கப்படுகிறது.",
+        unknownClarification: "மன்னிக்கவும், உங்கள் கேள்வி எனக்குப் புரியவில்லை. நாளை வானிலை, பாதுகாப்பான மீன்பிடி மண்டலங்கள், புயல் நிலை அல்லது பாதையைப் பற்றிக் கேட்க விரும்புகிறீர்களா?",
       },
     },
     weather: {
@@ -446,21 +488,35 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     ai: {
       title: "ओर्का एआई समुद्री सहायक",
-      subtitle: "अपनी क्षेत्रीय भाषा में पूछें और तुरंत समुद्री व मत्स्य पालन सलाह प्राप्त करें",
-      inputPlaceholder: "मौसम, सुरक्षित क्षेत्र या मछली पकड़ने की स्थिति के बारे में पूछें...",
-      analyzing: "समुद्री स्थितियों, हवा की गति और चक्रवात डेटा का विश्लेषण किया जा रहा है...",
+      subtitle: "प्रश्नों के इरादे को समझकर सटीक समुद्री व मत्स्य पालन सलाह देने वाला एआई",
+      inputPlaceholder: "मौसम, सुरक्षा, मार्ग या मत्स्य क्षेत्रों के बारे में पूछें...",
+      analyzing: "प्रश्न के उद्देश्य का विश्लेषण किया जा रहा है...",
       suggestedQuestionsTitle: "सुझाए गए प्रश्न",
       whyRecommendation: "यह सिफारिश क्यों?",
       keyReasons: "मुख्य समुद्री एवं मौसम कारक",
       suitabilityScore: "मत्स्य उपयुक्तता स्कोर",
       safetyRisk: "सुरक्षा जोखिम मूल्यांकन",
-      recommendationTitle: "ओर्का एआई सिफारिश",
+      recommendationTitle: "ओर्का एआई विश्लेषण",
+      contextResolvedNote: "संदर्भ हल किया गया: जोन A (North East Shelf)",
       questions: {
         q1: "कल सुबह मुझे मछली पकड़ने कहाँ जाना चाहिए?",
         q2: "क्या आज मछली पकड़ने जाना सुरक्षित है?",
-        q3: "मुझे सबसे अच्छे मत्स्य क्षेत्र दिखाएं।",
-        q4: "कल मौसम का पूर्वानुमान क्या है?",
+        q3: "कल मौसम का पूर्वानुमान क्या है?",
+        q4: "जोन A का रास्ता दिखाएं।",
         q5: "आपने जोन A की सिफारिश क्यों की?",
+        q6: "चक्रवात वर्तमान में कहाँ स्थित है?",
+        q7: "समुद्री स्थितियां (SST और क्लोरोफिल) कैसी हैं?",
+        q8: "नमस्ते ओर्का!",
+      },
+      intents: {
+        greeting: "नमस्कार कप्तान! मैं ओर्का (ORCA), आपका एआई समुद्री सहायक हूँ। आज आपकी यात्रा में मैं कैसे मदद कर सकता हूँ?",
+        weatherSummary: "चेन्नई तट मौसम पूर्वानुमान: कल सुबह 14.2 किमी/घंटा उत्तर-पूर्वी हवाओं और 1.1 मीटर लहरों के साथ साफ आसमान रहेगा।",
+        safetySummary: "जोन A (North East Shelf) सुरक्षा मूल्यांकन: कम जोखिम (LOW RISK)। हवा और लहरें सुरक्षित सीमा में हैं।",
+        cycloneSummary: "चक्रवात वरुण वर्तमान में चेन्नई से 145 किमी पूर्व-दक्षिण-पूर्व में है। जोन A के लिए कोई खतरा नहीं है।",
+        routeSummary: "चेन्नई बंदरगाह से जोन A का मार्ग: दूरी 18.4 किमी, अनुमानित समय 52 मिनट। मार्ग सुरक्षा: कम जोखिम।",
+        marineSummary: "वर्तमान समुद्री पैरामीटर: समुद्री सतह तापमान (SST) 28.2°C है, क्लोरोफिल सूचकांक 88% है।",
+        whySummary: "जोन A की सिफारिश अनुकूल तापमान (28.2°C) और उच्च क्लोरोफिल (88%) के कारण की गई है।",
+        unknownClarification: "क्षमा करें, मैं समझ नहीं पाया। क्या आप कल का मौसम, सुरक्षित मत्स्य क्षेत्र या चक्रवात की स्थिति जानना चाहते हैं?",
       },
     },
     weather: {
@@ -581,21 +637,35 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     ai: {
       title: "ఓర్కా AI సముద్ర సహాయకుడు",
-      subtitle: "మీ ప్రాంతీయ భాషలో అడగండి మరియు తక్షణ సముద్ర వేట సూచనలను పొందండి",
-      inputPlaceholder: "వాతావరణం, రక్షిత ప్రాంతాలు లేదా చేపల వేట గురించి అడగండి...",
-      analyzing: "సముద్ర పరిస్థితులు మరియు తుఫాను సమాచారాన్ని విశ్లేషిస్తోంది...",
+      subtitle: "ప్రశ్నల ఉద్దేశ్యాన్ని గ్రహించి ఖచ్చితమైన సముద్ర వేట సూచనలను ఇచ్చే AI",
+      inputPlaceholder: "వాతావరణం, రక్షణ, మార్గం లేదా చేపల వేట గురించి అడగండి...",
+      analyzing: "ప్రశ్న ఉద్దేశ్యాన్ని విశ్లేషిస్తోంది...",
       suggestedQuestionsTitle: "సూచించబడిన ప్రశ్నలు",
       whyRecommendation: "ఈ సిఫార్సు ఎందుకు?",
       keyReasons: "ముఖ్యమైన సముద్ర & వాతావరణ కారకాలు",
       suitabilityScore: "చేపల వేట అనుకూలత స్కోరు",
       safetyRisk: "రక్షణ ప్రమాద అంచనా",
-      recommendationTitle: "ఓర్కా AI సూచన",
+      recommendationTitle: "ఓర్కా AI విశ్లేషణ",
+      contextResolvedNote: "సందర్భం నిర్ధారించబడింది: జోన్ A (North East Shelf)",
       questions: {
         q1: "రేపు ఉదయం నేను చేపల వేటకు ఎక్కడికి వెళ్ళాలి?",
         q2: "ఈ రోజు చేపల వేటకు వెళ్లడం సురక్షితమేనా?",
-        q3: "ఉత్తమ చేపల వేట ప్రాంతాలను చూపించు.",
-        q4: "రేపటి వాతావరణం ఎలా ఉంటుంది?",
+        q3: "రేపటి వాతావరణం ఎలా ఉంటుంది?",
+        q4: "జోన్ A కు మార్గాన్ని చూపించు.",
         q5: "మీరు జోన్ A ను ఎందుకు సిఫార్సు చేశారు?",
+        q6: "తుఫాను ప్రస్తుతం ఎక్కడ ఉంది?",
+        q7: "సముద్ర పరిస్థితులు (SST & క్లోరోఫిల్) ఎలా ఉన్నాయి?",
+        q8: "నమస్కారం ఓర్కా!",
+      },
+      intents: {
+        greeting: "నమస్కారం కెప్టెన్! నేను ఓర్కా (ORCA), మీ AI సముద్ర సహాయకుడిని. ఈ రోజు మీ ప్రయాణంలో నేను ఎలా సహాయపడగలను?",
+        weatherSummary: "చెన్నై తీర ప్రాంత వాతావరణ అంచనా: రేపు ఉదయం 14.2 కిమీ/గం ఈశాన్య గాలులు మరియు 1.1 మీ అలల ఎత్తుతో వాతావరణం ప్రశాంతంగా ఉంటుంది.",
+        safetySummary: "జోన్ A (North East Shelf) రక్షణ అంచనా: తక్కువ ప్రమాదం (LOW RISK). గాలులు మరియు అలలు సురక్షిత పరిమితిలో ఉన్నాయి.",
+        cycloneSummary: "వరుణ తుఫాను ప్రస్తుతం చెన్నైకి ఈశాన్యం వైపు ప్రయాణిస్తోంది. జోన్ A కు ప్రమాదం లేదు.",
+        routeSummary: "చెన్నై పోర్ట్ నుండి జోన్ A కు మార్గం: దూరం 18.4 కిమీ, ప్రయాణ సమయం 52 నిమిషాలు. రక్షణ: తక్కువ ప్రమాదం.",
+        marineSummary: "ప్రస్తుత సముద్ర పారామితులు: సముద్ర ఉపరితల ఉష్ణోగ్రత 28.2°C, క్లోరోఫిల్ 88%.",
+        whySummary: "జోన్ A ఉష్ణోగ్రత (28.2°C) మరియు క్లోరోఫిల్ (88%) ఆధారంగా సిఫార్సు చేయబడింది.",
+        unknownClarification: "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు. రేపటి వాతావరణం, చేపల వేట ప్రాంతాలు లేదా తుఫాను గురించి తెలుసుకోవాలనుకుంటున్నారా?",
       },
     },
     weather: {

@@ -1,4 +1,18 @@
 import type { Language } from '../i18n/translations';
+import { translations } from '../i18n/translations';
+
+export type IntentType =
+  | 'GREETING'
+  | 'WEATHER'
+  | 'SAFETY'
+  | 'CYCLONE'
+  | 'MARINE_CONDITIONS'
+  | 'ROUTE'
+  | 'FISHING_ZONE'
+  | 'FISHING_RECOMMENDATION'
+  | 'WHY_EXPLANATION'
+  | 'GENERAL_MARINE'
+  | 'UNKNOWN';
 
 export interface MarineLocation {
   id: string;
@@ -60,22 +74,53 @@ export interface CycloneData {
   status: string;
 }
 
-export interface AIResponse {
-  recommendedZone: string;
-  suitabilityScore: number;
-  safetyRisk: string;
-  distanceKm: number;
-  travelTimeMin: number;
-  bestTime: string;
+export interface DynamicAIResponse {
+  intent: IntentType;
   summary: string;
-  reasons: string[];
-  whyExplanation: {
+  contextResolved?: string;
+  recommendedZone?: string;
+  suitabilityScore?: number;
+  safetyRisk?: string;
+  distanceKm?: number;
+  travelTimeMin?: number;
+  bestTime?: string;
+  reasons?: string[];
+  whyExplanation?: {
     sstNote: string;
     chlorophyllNote: string;
     weatherNote: string;
     waveNote: string;
     cycloneNote: string;
   };
+  weatherData?: {
+    airTemp: number;
+    windSpeed: number;
+    waveHeight: number;
+    rainProb: number;
+    forecastWindow: string;
+  };
+  cycloneData?: CycloneData;
+  routeData?: {
+    from: string;
+    to: string;
+    distanceKm: number;
+    travelTimeMin: number;
+    routeRisk: string;
+  };
+  marineData?: {
+    sst: number;
+    chlorophyllIndex: number;
+    currentSpeed: number;
+    visibilityKm: number;
+  };
+}
+
+export interface ChatHistoryMessage {
+  id: string;
+  sender: 'user' | 'orca';
+  text?: string;
+  recommendation?: DynamicAIResponse;
+  timestamp: string;
 }
 
 export const COASTAL_LOCATIONS: MarineLocation[] = [
@@ -264,102 +309,242 @@ export const CYCLONE_VARUNA: CycloneData = {
   status: 'Moving North-East away from Chennai Harbor. Low direct landfall risk.',
 };
 
-export function generateAIRecommendation(_query: string, lang: Language, isOffline: boolean): AIResponse {
-  // Pre-configured localized responses for key queries
-  const isTamil = lang === 'ta';
-  const isHindi = lang === 'hi';
-  const isTelugu = lang === 'te';
+/**
+ * Detect Intent and resolve multi-turn conversation context
+ */
+export function detectIntentAndContext(
+  query: string,
+  history: ChatHistoryMessage[] = []
+): { intent: IntentType; resolvedContext?: string } {
+  const q = query.toLowerCase().trim();
 
-  let reasons: string[] = [];
-  let why = {
-    sstNote: '',
-    chlorophyllNote: '',
-    weatherNote: '',
-    waveNote: '',
-    cycloneNote: '',
-  };
-
-  if (isTamil) {
-    reasons = [
-      'கடல் பரப்பு வெப்பநிலை (SST 28.2°C) மீன்கள் تجمع ஆக மிகவும் சாதகமாக உள்ளது.',
-      'குளோரோபில் செறிவு (88%) அதிக அளவிலான இரையை (Plankton) குறிக்கிறது.',
-      'காலை 06:00 - 11:00 மணி வரை அலை உயரம் (1.1m) மற்றும் காற்றின் வேகம் பாதுகாப்பான எல்லைக்குள் உள்ளது.',
-      'வருணா புயல் (Varuna Cyclone) மண்டலம் A-விலிருந்து 82 கி.மீ தொலைவில் வடகிழக்கு நோக்கிச் செல்வதால் எவ்வித ஆபத்தும் இல்லை.',
-      'சென்னை துறைமுகத்திலிருந்து 18.4 கி.மீ மட்டுமே என்பதால் குறைந்த எரிபொருள் செலவில் அடையலாம்.',
-    ];
-    why = {
-      sstNote: 'கடல் பரப்பு வெப்பநிலை 28.2°C ஆக உள்ளது, இது காலா, வஞ்சிரம் மற்றும் சூரை மீன்களுக்கு ஏற்ற உகந்த சூழலாகும்.',
-      chlorophyllNote: 'செயற்கைக்கோள் தரவு உயர் குளோரோபில் குறியீட்டை (88%) காட்டுகிறது, இது அதிக மீன் கூட்டங்களைக் ஈர்க்கிறது.',
-      weatherNote: 'காலை நேரங்களில் மிதமான காற்று (14.2 km/h) மற்றும் தெளிவான வானிலை நிலவுகிறது.',
-      waveNote: 'அலை உயரம் 1.1 மீட்டராக இருப்பதால் சிறிய மற்றும் நடுத்தர படகுகளுக்கு பாதுகாப்பானது.',
-      cycloneNote: 'வருணா புயல் 145 கி.மீ தொலைவில் வடகிழக்கு திசையில் நகர்வதால் சென்னை கடற்கரைக்கு நேரடி அச்சுறுத்தல் இல்லை.',
-    };
-  } else if (isHindi) {
-    reasons = [
-      'समुद्री सतह का तापमान (SST 28.2°C) मछली समूह के लिए अत्यधिक अनुकूल है।',
-      'उच्च क्लोरोफिल सांद्रता (88%) भरपूर प्लवक (चारा) की उपस्थिति दर्शाती है।',
-      'सुबह 06:00 से 11:00 बजे तक हवा और लहरें सुरक्षित सीमा में रहेंगी।',
-      'वरुण चक्रवात 82 किमी दूर उत्तर-पूर्व की ओर बढ़ रहा है, जिससे कोई खतरा नहीं है।',
-      'चेन्नई बंदरगाह से 18.4 किमी की दूरी पर होने के कारण ईंधन की बचत होगी।',
-    ];
-    why = {
-      sstNote: 'समुद्री सतह का तापमान 28.2°C है, जो विभिन्न मछली प्रजातियों के लिए आदर्श है।',
-      chlorophyllNote: 'सैटेलाइट डेटा 88% क्लोरोफिल दिखाता है, जिससे मछलियों का बड़ा झुंड यहाँ मौजूद है।',
-      weatherNote: 'सुबह के समय 14.2 किमी/घंटा की गति से अनुकूल हवाएं चलेंगी।',
-      waveNote: 'लहरों की ऊंचाई 1.1 मीटर रहने से नाव संचालन सुरक्षित रहेगा।',
-      cycloneNote: 'चक्रवात वरुण 145 किमी दूर उत्तर-पूर्व की ओर बढ़ रहा है।',
-    };
-  } else if (isTelugu) {
-    reasons = [
-      'సముద్ర ఉపరితల ఉష్ణోగ్రత (SST 28.2°C) చేపల వేటకు చాలా అనుకూలంగా ఉంది.',
-      'అధిక క్లోరోఫిల్ శాతం (88%) ఎక్కువ ఆహార లభ్యతను సూచిస్తుంది.',
-      'ఉదయం 06:00 నుండి 11:00 వరకు అలల ఎత్తు (1.1మీ) మరియు గాలి వేగం సురక్షిత పరిమితిలో ఉంటాయి.',
-      'వరుణ తుఫాను 82 కి.మీ దూరంలో ఈశాన్యం వైపు వెళుతుండటంతో ఎటువంటి ప్రమాదం లేదు.',
-      'చెన్నై పోర్ట్ నుండి 18.4 కి.మీ దూరంలో ఉన్నందున తక్కువ ఇంధనంతో త్వరగా చేరుకోవచ్చు.',
-    ];
-    why = {
-      sstNote: 'సముద్ర ఉపరితల ఉష్ణోగ్రత 28.2°C వద్ద అనుకూలంగా ఉంది.',
-      chlorophyllNote: 'శాటిలైట్ డేటా 88% క్లోరోఫిల్ తీవ్రతను చూపుతోంది.',
-      weatherNote: 'ఉదయం గాలి వేగం 14.2 కిమీ/గం వద్ద సురక్షితంగా ఉంటుంది.',
-      waveNote: 'అలల ఎత్తు 1.1 మీటర్ల వద్ద స్థిరంగా ఉంటుంది.',
-      cycloneNote: 'వరుణ తుఫాను ఈశాన్యం వైపు ప్రయాణిస్తోంది, ప్రమాదం లేదు.',
-    };
-  } else {
-    reasons = [
-      'Favorable Sea Surface Temperature (SST 28.2°C) supports dense pelagic fish aggregation.',
-      'High Chlorophyll concentration (88%) indicates rich phytoplankton and active feeding zones.',
-      'Optimal weather window from 06:00 to 11:00 AM with gentle winds (14.2 km/h) and low swell (1.1m).',
-      'Cyclonic Storm VARUNA is 82 km East-Southeast moving away, leaving Zone A safe.',
-      'Short travel distance of 18.4 km from Chennai Port ensures fuel efficiency.',
-    ];
-    why = {
-      sstNote: 'Sea Surface Temperature of 28.2°C creates an optimal thermal boundary for mackerel, tuna, and seer fish.',
-      chlorophyllNote: 'ISRO satellite chlorophyll imagery identifies high phytoplankton density feeding marine life.',
-      weatherNote: 'Clear atmospheric conditions with mild light breeze (14.2 km/h NE).',
-      waveNote: 'Significant wave height is 1.1m, safe for small to mid-sized fishing trawlers.',
-      cycloneNote: 'Cyclone VARUNA is positioned 145km offshore moving North-East away from coast, outside 50km safety zone.',
-    };
+  // Check for greetings first
+  if (
+    /^(hi|hello|vanakkam|வணக்கம்|नमस्ते|நமస్కారం|hey|greetings|good morning)/i.test(q)
+  ) {
+    return { intent: 'GREETING' };
   }
 
+  // Check for "Why" / Explanation Intent
+  if (
+    /why|ஏன்|ஏனென்றால்|காரணம்|கணக்கீடு|பரிந்துரை பண்ணி|kyun|enduku|reason/i.test(q)
+  ) {
+    return { intent: 'WHY_EXPLANATION', resolvedContext: 'Zone A (North East Shelf)' };
+  }
+
+  // Check for Route / Navigation Intent
+  if (/route|distance|travel|how to reach|பாதை|தூரம்|பயணம்|rasta|dhooram/i.test(q)) {
+    return { intent: 'ROUTE', resolvedContext: 'Chennai Harbor ➔ Zone A (18.4 km)' };
+  }
+
+  // Check for Cyclone Intent
+  if (/cyclone|storm|varuna|புயல்|வருணா|சுழல்|toofan|thufan/i.test(q)) {
+    return { intent: 'CYCLONE', resolvedContext: 'Cyclonic Storm VARUNA (145 km offshore)' };
+  }
+
+  // Check for Weather Intent
+  if (
+    /weather|rain|wind|temperature|forecast|வானிலை|மழை|காற்று|வெப்பநிலை|mausam|havaman/i.test(
+      q
+    )
+  ) {
+    return { intent: 'WEATHER', resolvedContext: 'Chennai Offshore Forecast (Tomorrow Morning)' };
+  }
+
+  // Check for Safety Intent
+  if (/safe|safety|risk|hazard|பாதுகாப்பானதா|பாதுகாப்பு|அபாயம்|surakshit|badram/i.test(q)) {
+    // Check if context has prior fishing recommendation
+    const hasPriorZoneRec = history.some((m) => m.recommendation?.recommendedZone);
+    const resolved = hasPriorZoneRec ? 'Referring to Zone A (North East Shelf)' : undefined;
+    return { intent: 'SAFETY', resolvedContext: resolved };
+  }
+
+  // Check for Marine Conditions Intent
+  if (
+    /sst|chlorophyll|current|waves|sea condition|குளோரோபில்|வெப்பநிலை|நீரோட்டம்|கடல் நிலை/i.test(
+      q
+    )
+  ) {
+    return { intent: 'MARINE_CONDITIONS', resolvedContext: 'ISRO Ocean Color & Satellite Telemetry' };
+  }
+
+  // Check for Fishing Zone / Specific Zone Intent
+  if (
+    /fishing zone|best zone|where to fish|எங்கு மீன்பிடிக்க|மீன்பிடி மண்டலம்|machli/i.test(
+      q
+    )
+  ) {
+    return { intent: 'FISHING_ZONE', resolvedContext: 'PFZ Alpha — Zone A' };
+  }
+
+  // Check for Overall Fishing Recommendation Intent
+  if (
+    /recommend|suggest|where should i go|எந்த இடத்திற்கு செல்லலாம்|பரிந்துரை/i.test(
+      q
+    )
+  ) {
+    return { intent: 'FISHING_RECOMMENDATION' };
+  }
+
+  // Check general marine terms
+  if (/ocean|sea|coast|port|harbor|கடல்|துறைமுகம்|samudra/i.test(q)) {
+    return { intent: 'GENERAL_MARINE' };
+  }
+
+  return { intent: 'UNKNOWN' };
+}
+
+/**
+ * Generate Dynamic AI Response specific to detected Intent and Language
+ */
+export function generateDynamicAIResponse(
+  query: string,
+  lang: Language,
+  isOffline: boolean,
+  history: ChatHistoryMessage[] = []
+): DynamicAIResponse {
+  const { intent, resolvedContext } = detectIntentAndContext(query, history);
+  const t = translations[lang].ai.intents;
   const prefix = isOffline ? '[OFFLINE LOCAL PACKAGE] ' : '';
 
-  return {
-    recommendedZone: 'Zone A — North East Shelf',
-    suitabilityScore: 87,
-    safetyRisk: isTamil ? 'குறைந்த அபாயம் (LOW)' : isHindi ? 'कम जोखिम (LOW)' : isTelugu ? 'తక్కువ ప్రమాదం (LOW)' : 'LOW RISK',
-    distanceKm: 18.4,
-    travelTimeMin: 52,
-    bestTime: '06:00 – 11:00 AM',
-    summary: `${prefix}${
-      isTamil
-        ? 'நாளை காலை மீன்பிடிக்க மண்டலம் A (Zone A — North East Shelf) மிகச்சிறந்த இடமாகும். 87% பொருத்தமும் குறைந்த அபாயமும் கொண்டது.'
-        : isHindi
-        ? 'कल सुबह के लिए जोन A (Zone A — North East Shelf) सबसे अच्छा मत्स्य क्षेत्र है। उपयुक्तता 87% और जोखिम कम है।'
-        : isTelugu
-        ? 'రేపు ఉదయం వేటకు జోన్ A (Zone A — North East Shelf) అత్యంత అనుకూలమైన ప్రాంతం. అనుకూలత 87% మరియు ప్రమాదం తక్కువ.'
-        : 'Zone A (North East Shelf) is highly recommended for tomorrow morning with 87% suitability and Low safety risk.'
-    }`,
-    reasons,
-    whyExplanation: why,
+  const zoneA = FISHING_ZONES[0];
+  const chennai = COASTAL_LOCATIONS[0];
+
+  const whyExpl = {
+    sstNote:
+      lang === 'ta'
+        ? 'கடல் பரப்பு வெப்பநிலை 28.2°C ஆக உள்ளது, இது வஞ்சிரம் மற்றும் சூரை மீன்களுக்கு ஏற்ற சூழலாகும்.'
+        : 'Sea Surface Temp 28.2°C forms an optimal boundary for pelagic fish species.',
+    chlorophyllNote:
+      lang === 'ta'
+        ? 'செயற்கைக்கோள் தரவு 88% உயர் குளோரோபில் அளவைக் காட்டுகிறது.'
+        : 'Satellite imagery shows 88% high chlorophyll index indicating feeding plankton.',
+    weatherNote:
+      lang === 'ta'
+        ? 'காலை நேரத்தில் மிதமான காற்று (14.2 km/h) மற்றும் தெளிவான வானிலை நிலவுகிறது.'
+        : 'Favorable morning light winds (14.2 km/h NE) and clear sky.',
+    waveNote:
+      lang === 'ta'
+        ? 'அலை உயரம் 1.1 மீட்டராக இருப்பதால் படகுகளுக்கு பாதுகாப்பானது.'
+        : 'Swell height of 1.1m is safe for trawler navigation.',
+    cycloneNote:
+      lang === 'ta'
+        ? 'வருணா புயல் 145 கி.மீ தொலைவில் வடகிழக்கு திசையில் நகர்வதால் ஆபத்து இல்லை.'
+        : 'Cyclone VARUNA is 145 km East-Southeast moving away, leaving Zone A safe.',
   };
+
+  switch (intent) {
+    case 'GREETING':
+      return {
+        intent: 'GREETING',
+        summary: `${prefix}${t.greeting}`,
+      };
+
+    case 'WEATHER':
+      return {
+        intent: 'WEATHER',
+        summary: `${prefix}${t.weatherSummary}`,
+        contextResolved: resolvedContext,
+        weatherData: {
+          airTemp: chennai.airTemp,
+          windSpeed: chennai.windSpeed,
+          waveHeight: chennai.waveHeight,
+          rainProb: 18,
+          forecastWindow: '06:00 – 11:00 AM (Safe)',
+        },
+      };
+
+    case 'SAFETY':
+      return {
+        intent: 'SAFETY',
+        summary: `${prefix}${t.safetySummary}`,
+        contextResolved: resolvedContext || 'Zone A (North East Shelf)',
+        safetyRisk: lang === 'ta' ? 'குறைந்த அபாயம் (LOW)' : 'LOW RISK',
+        reasons: [
+          lang === 'ta'
+            ? 'காற்றின் வேகம் (14.2 km/h) மற்றும் அலைகள் (1.1m) பாதுகாப்பான வரம்பில் உள்ளன.'
+            : 'Wind speed (14.2 km/h) and wave height (1.1m) remain safe until 14:00.',
+          lang === 'ta'
+            ? 'வருணா புயல் மண்டலம் A-விலிருந்து 82 கி.மீ தொலைவில் வடகிழக்காகச் செல்கிறது.'
+            : 'Cyclone VARUNA is moving North-East away from Zone A with 82km margin.',
+        ],
+      };
+
+    case 'CYCLONE':
+      return {
+        intent: 'CYCLONE',
+        summary: `${prefix}${t.cycloneSummary}`,
+        contextResolved: resolvedContext,
+        cycloneData: CYCLONE_VARUNA,
+      };
+
+    case 'ROUTE':
+      return {
+        intent: 'ROUTE',
+        summary: `${prefix}${t.routeSummary}`,
+        contextResolved: resolvedContext,
+        routeData: {
+          from: 'Chennai Harbor Port',
+          to: 'Zone A — North East Shelf',
+          distanceKm: zoneA.distanceKm,
+          travelTimeMin: zoneA.travelTimeMin,
+          routeRisk: 'LOW RISK',
+        },
+      };
+
+    case 'MARINE_CONDITIONS':
+      return {
+        intent: 'MARINE_CONDITIONS',
+        summary: `${prefix}${t.marineSummary}`,
+        contextResolved: resolvedContext,
+        marineData: {
+          sst: chennai.sst,
+          chlorophyllIndex: zoneA.factors.chlorophyll,
+          currentSpeed: chennai.currentSpeed,
+          visibilityKm: chennai.visibility,
+        },
+      };
+
+    case 'WHY_EXPLANATION':
+      return {
+        intent: 'WHY_EXPLANATION',
+        summary: `${prefix}${t.whySummary}`,
+        contextResolved: resolvedContext,
+        whyExplanation: whyExpl,
+      };
+
+    case 'FISHING_ZONE':
+    case 'FISHING_RECOMMENDATION':
+    case 'GENERAL_MARINE':
+    default:
+      return {
+        intent,
+        summary: `${prefix}${
+          intent === 'UNKNOWN'
+            ? t.unknownClarification
+            : lang === 'ta'
+            ? 'நாளை காலை மீன்பிடிக்க மண்டலம் A (Zone A — North East Shelf) மிகச்சிறந்த இடமாகும். 87% பொருத்தமும் குறைந்த அபாயமும் கொண்டது.'
+            : 'Zone A (North East Shelf) is highly recommended for tomorrow morning with 87% suitability and Low safety risk.'
+        }`,
+        contextResolved: resolvedContext,
+        recommendedZone: 'Zone A — North East Shelf',
+        suitabilityScore: 87,
+        safetyRisk: lang === 'ta' ? 'குறைந்த அபாயம் (LOW)' : 'LOW RISK',
+        distanceKm: 18.4,
+        travelTimeMin: 52,
+        bestTime: '06:00 – 11:00 AM',
+        reasons: [
+          lang === 'ta'
+            ? 'கடல் பரப்பு வெப்பநிலை (SST 28.2°C) மீன்கள் تجمع ஆக மிகவும் சாதகமாக உள்ளது.'
+            : 'Favorable Sea Surface Temperature (SST 28.2°C) supports pelagic fish.',
+          lang === 'ta'
+            ? 'குளோரோபில் செறிவு (88%) அதிக அளவிலான இரையை (Plankton) குறிக்கிறது.'
+            : 'High Chlorophyll concentration (88%) indicates rich feeding zones.',
+          lang === 'ta'
+            ? 'காலை 06:00 - 11:00 மணி வரை அலை மற்றும் காற்று பாதுகாப்பான எல்லைக்குள் உள்ளது.'
+            : 'Optimal weather window from 06:00 to 11:00 AM with gentle winds.',
+        ],
+        whyExplanation: whyExpl,
+      };
+  }
 }
