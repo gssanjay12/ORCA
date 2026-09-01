@@ -16,6 +16,8 @@ interface FishingZonesViewProps {
   onNavigateToAI: (query?: string) => void;
   selectedZone?: FishingZone;
   onSelectZone?: (zone: FishingZone) => void;
+  vesselPos: [number, number];
+  onMapClickRelocate: (lat: number, lng: number) => void;
 }
 
 export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
@@ -23,6 +25,8 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
   onNavigateToAI: _onNavigateToAI,
   selectedZone: propSelectedZone,
   onSelectZone: propOnSelectZone,
+  vesselPos,
+  onMapClickRelocate,
 }) => {
   const t = translations[currentLang];
   const [internalZone, setInternalZone] = useState<FishingZone>(FISHING_ZONES[0]);
@@ -62,9 +66,9 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Zone Selector Cards List + Factor Breakdown Details */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Side: 4 Fishing Zones Cards List (5 columns) */}
+        {/* Left Side: 4 Fishing Zones Cards List */}
         <div className="lg:col-span-5 space-y-3">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
             Select Fishing Sector:
@@ -112,7 +116,7 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
           })}
         </div>
 
-        {/* Right Side: Selected Zone Detailed Factor Breakdown (7 columns) */}
+        {/* Right Side: Selected Zone Detailed Breakdown */}
         <div className="lg:col-span-7 p-6 rounded-2xl glass-panel-accent border-cyan-500/30 space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-cyan-500/20">
             <div>
@@ -145,7 +149,6 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
             </div>
           ) : (
             <>
-              {/* Border Safety Status Row */}
               <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-slate-200 font-bold">
                   <Shield className="w-4 h-4 text-emerald-400" />
@@ -161,7 +164,6 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
                   <span>{t.zones.factorsTitle}</span>
                 </h4>
 
-                {/* SST Factor */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-slate-300 font-medium">
                     <span>{t.zones.tempGradient}</span>
@@ -175,7 +177,6 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
                   </div>
                 </div>
 
-                {/* Chlorophyll Factor */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-slate-300 font-medium">
                     <span>{t.zones.chlorophyll}</span>
@@ -191,7 +192,6 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
                   </div>
                 </div>
 
-                {/* Ocean Current Factor */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-slate-300 font-medium">
                     <span>{t.zones.oceanCurrent}</span>
@@ -210,15 +210,22 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
             </>
           )}
 
-          {/* Optimized Route Summary */}
+          {/* Route Avoidance Notification */}
           <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-bold text-cyan-300 flex items-center gap-1.5">
                 <ArrowRight className="w-4 h-4" />
                 <span>Optimized Navigation Route</span>
               </span>
-              <span className="font-mono text-slate-400">Chennai Harbor ➔ {activeZone.name}</span>
+              <span className="font-mono text-slate-400">Vessel ➔ {activeZone.name}</span>
             </div>
+
+            {activeZone.isRestrictedExcluded && (
+              <div className="p-2 rounded bg-amber-950/80 border border-amber-500/40 text-[11px] text-amber-300 font-bold">
+                {t.geofence.unsafeRouteDetected}
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2 text-slate-300 text-center">
               <div className="p-2 rounded-lg bg-slate-900">
                 <span className="text-[10px] text-slate-400 block">Distance</span>
@@ -237,16 +244,17 @@ export const FishingZonesView: React.FC<FishingZonesViewProps> = ({
         </div>
       </div>
 
-      {/* Interactive Map view for Fishing Zones */}
       <div className="space-y-2">
         <h3 className="text-sm font-bold text-slate-200">
-          Spatial Distribution Map — PFZ Zones & Restricted Maritime Boundaries
+          Spatial Distribution Map — PFZ Zones & Geofenced Defense Boundaries
         </h3>
         <MarineMap
           currentLang={currentLang}
           selectedZoneId={activeZone.id}
           onSelectZone={handleSelect}
           showRoute={true}
+          vesselPos={vesselPos}
+          onMapClickRelocate={onMapClickRelocate}
         />
       </div>
     </div>

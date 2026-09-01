@@ -1,7 +1,8 @@
 import React from 'react';
 import { translations, type Language } from '../i18n/translations';
-import { CYCLONE_VARUNA, COASTAL_LOCATIONS, MARITIME_BOUNDARIES } from '../data/mockMarineData';
+import { CYCLONE_VARUNA, COASTAL_LOCATIONS, MARITIME_BOUNDARIES, type GeofenceState } from '../data/mockMarineData';
 import { MarineMap } from './MarineMap';
+import { SimulationControlPanel, type AlertLogItem } from './SimulationControlPanel';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -21,12 +22,32 @@ interface SafetyViewProps {
   currentLang: Language;
   safetyBubbleRadiusKm: number;
   onSafetyBubbleRadiusChange: (radius: number) => void;
+  vesselPos: [number, number];
+  geofenceState: GeofenceState;
+  isPlayingSim: boolean;
+  onTogglePlaySim: () => void;
+  onResetSim: () => void;
+  simSpeed: number;
+  onChangeSimSpeed: (speed: number) => void;
+  alertLogs: AlertLogItem[];
+  onClearAlertLogs: () => void;
+  onMapClickRelocate: (lat: number, lng: number) => void;
 }
 
 export const SafetyView: React.FC<SafetyViewProps> = ({
   currentLang,
   safetyBubbleRadiusKm,
   onSafetyBubbleRadiusChange,
+  vesselPos,
+  geofenceState,
+  isPlayingSim,
+  onTogglePlaySim,
+  onResetSim,
+  simSpeed,
+  onChangeSimSpeed,
+  alertLogs,
+  onClearAlertLogs,
+  onMapClickRelocate,
 }) => {
   const t = translations[currentLang];
   const chennai = COASTAL_LOCATIONS[0];
@@ -36,23 +57,37 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Top Banner */}
+      {/* Top Hero Banner */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-black text-slate-100 flex items-center gap-2">
             <ShieldAlert className="w-6 h-6 text-amber-400" />
-            <span>{t.safety.title} & {t.border.title}</span>
+            <span>{t.geofence.title}</span>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Real-time Coast Guard Telemetry, IMBL Proximity Alerting & Cyclone Radar
+            Real-time Point-in-Polygon Detection & Proximity Alerting — {t.geofence.conceptLabel}
           </p>
         </div>
 
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold">
           <Radio className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span>Coastal Warning Telemetry Active</span>
+          <span>Coastal Warning & Geofence Engine Active</span>
         </div>
       </div>
+
+      {/* Simulation Controls Panel */}
+      <SimulationControlPanel
+        currentLang={currentLang}
+        vesselPos={vesselPos}
+        geofenceState={geofenceState}
+        isPlaying={isPlayingSim}
+        onTogglePlay={onTogglePlaySim}
+        onReset={onResetSim}
+        simSpeed={simSpeed}
+        onChangeSpeed={onChangeSimSpeed}
+        alertLogs={alertLogs}
+        onClearLogs={onClearAlertLogs}
+      />
 
       {/* Hazard Overlap Alert Banner if radius enlarged */}
       {isHazardIntersecting && (
@@ -65,7 +100,7 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
         </div>
       )}
 
-      {/* MARITIME BORDER PROTECTION CARD */}
+      {/* MARITIME BORDER & GEOFENCE PROTECTION CARD */}
       <div className="p-6 rounded-2xl glass-panel-accent border-cyan-500/30 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-cyan-500/20">
           <div className="flex items-center gap-3">
@@ -87,7 +122,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
 
         {/* 3 Alert State Badges */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* SAFE STATE */}
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-1">
             <div className="flex items-center justify-between font-extrabold text-emerald-400">
               <span>🟢 {t.border.states.safe}</span>
@@ -96,7 +130,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
             <p className="text-slate-300 text-[11px]">Far from boundary lines & prohibited defense areas.</p>
           </div>
 
-          {/* CAUTION STATE */}
           <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-xs space-y-1">
             <div className="flex items-center justify-between font-extrabold text-amber-400">
               <span>🟡 {t.border.states.caution}</span>
@@ -105,7 +138,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
             <p className="text-slate-300 text-[11px]">Approaching within 15 km of International Boundary.</p>
           </div>
 
-          {/* RESTRICTED STATE */}
           <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/40 text-xs space-y-1">
             <div className="flex items-center justify-between font-extrabold text-red-400">
               <span>🔴 {t.border.states.restricted}</span>
@@ -138,7 +170,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
 
       {/* Risk Matrix Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Overall Risk Score Indicator */}
         <div className="p-6 rounded-2xl glass-panel-accent border-emerald-500/30 flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -162,14 +193,12 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
           </div>
         </div>
 
-        {/* 6 Sub-Risk Factors Breakdown */}
         <div className="lg:col-span-2 p-6 rounded-2xl glass-panel border-cyan-500/20 space-y-4">
           <h3 className="text-sm font-bold text-slate-200">
             Marine Hazard Sub-Factor Risk Matrix
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {/* Wind */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>{t.safety.factors.wind}</span>
@@ -179,7 +208,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
               <span className="text-[10px] text-emerald-400 font-semibold uppercase">Low Risk</span>
             </div>
 
-            {/* Waves */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>{t.safety.factors.waves}</span>
@@ -189,7 +217,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
               <span className="text-[10px] text-emerald-400 font-semibold uppercase">Low Risk</span>
             </div>
 
-            {/* Rain */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>{t.safety.factors.rain}</span>
@@ -199,7 +226,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
               <span className="text-[10px] text-emerald-400 font-semibold uppercase">Low Risk</span>
             </div>
 
-            {/* Ocean Current */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>{t.safety.factors.current}</span>
@@ -209,7 +235,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
               <span className="text-[10px] text-emerald-400 font-semibold uppercase">Low Risk</span>
             </div>
 
-            {/* Cyclone Proximity */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-amber-500/40 space-y-1 text-xs">
               <div className="flex items-center justify-between text-amber-400 text-[11px]">
                 <span>{t.safety.factors.cyclone}</span>
@@ -219,7 +244,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
               <span className="text-[10px] text-amber-400 font-semibold uppercase">Moderate Caution</span>
             </div>
 
-            {/* Visibility */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>{t.safety.factors.visibility}</span>
@@ -267,7 +291,6 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
           </div>
         </div>
 
-        {/* Cyclone VARUNA Live Telemetry Card */}
         <div className="p-6 rounded-2xl glass-panel border-red-500/30 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
@@ -296,15 +319,17 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
         </div>
       </div>
 
-      {/* Map displaying Safety Bubble & Maritime Boundaries */}
+      {/* Map displaying Geofences & Safety Bubble */}
       <div className="space-y-2">
         <h3 className="text-sm font-bold text-slate-200">
-          Spatial Hazard Map — IMBL Border Lines, Restricted Zones & Safety Radius
+          Geofenced Spatial Hazard Map — Polygons, Restricted Defense Sectors & Vessel Position
         </h3>
         <MarineMap
           currentLang={currentLang}
           safetyBubbleRadiusKm={safetyBubbleRadiusKm}
           showRoute={true}
+          vesselPos={vesselPos}
+          onMapClickRelocate={onMapClickRelocate}
         />
       </div>
     </div>

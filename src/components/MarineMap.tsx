@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, Polygon, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   FISHING_ZONES,
   CYCLONE_VARUNA,
   MARITIME_BOUNDARIES,
+  GEOFENCE_POLYGONS,
   type FishingZone,
 } from '../data/mockMarineData';
 import { Compass, Layers } from 'lucide-react';
@@ -17,20 +18,35 @@ interface MarineMapProps {
   onSelectZone?: (zone: FishingZone) => void;
   safetyBubbleRadiusKm?: number;
   showRoute?: boolean;
+  vesselPos?: [number, number];
+  onMapClickRelocate?: (lat: number, lng: number) => void;
 }
 
+// Map Click Handler Component for manual vessel relocation
+const MapClickHandler: React.FC<{ onRelocate?: (lat: number, lng: number) => void }> = ({ onRelocate }) => {
+  useMapEvents({
+    click(e) {
+      if (onRelocate) {
+        onRelocate(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+};
+
 // Custom Leaflet Icons
-const vesselIcon = L.divIcon({
-  className: 'custom-vessel-icon',
-  html: `<div class="relative flex items-center justify-center w-8 h-8">
-    <div class="absolute w-8 h-8 rounded-full bg-cyan-500/30 animate-radar-ping"></div>
-    <div class="relative z-10 p-2 bg-cyan-500 text-slate-950 rounded-full shadow-lg border-2 border-cyan-300">
+const createVesselIcon = () =>
+  L.divIcon({
+    className: 'custom-vessel-icon',
+    html: `<div class="relative flex items-center justify-center w-9 h-9">
+    <div class="absolute w-9 h-9 rounded-full bg-cyan-400/40 animate-ping"></div>
+    <div class="relative z-10 p-2 bg-cyan-400 text-slate-950 rounded-full shadow-2xl border-2 border-white">
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/></svg>
     </div>
   </div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-});
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+  });
 
 const cycloneIcon = L.divIcon({
   className: 'custom-cyclone-icon',
@@ -62,7 +78,7 @@ const createZoneIcon = (score: number, isRecommended?: boolean, isRestricted?: b
           ? '<span class="px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded-full shadow mb-1 border border-white">RESTRICTED</span>'
           : ''
       }
-      <div class="flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-extrabold text-slate-950 shadow-md border-2 border-white/80" style="background-color: ${bgColor}; font-color: ${isRestricted ? '#ffffff' : '#000000'};">
+      <div class="flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-extrabold text-slate-950 shadow-md border-2 border-white/80" style="background-color: ${bgColor};">
         ${isRestricted ? 'EXCLUDED' : `${score}%`}
       </div>
     </div>`,
@@ -77,9 +93,10 @@ export const MarineMap: React.FC<MarineMapProps> = ({
   onSelectZone,
   safetyBubbleRadiusKm = 20,
   showRoute = true,
+  vesselPos = [13.0827, 80.2707],
+  onMapClickRelocate,
 }) => {
   const t = translations[currentLang];
-  const chennaiHarbor: [number, number] = [13.0827, 80.2707];
   const selectedZone = FISHING_ZONES.find((z) => z.id === selectedZoneId) || FISHING_ZONES[0];
 
   // Map layer controls state
@@ -90,28 +107,48 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     safetyBubble: true,
     cyclone: true,
     boundaries: true,
+    geofencePolygons: true,
   });
 
-  const routePolyline: [number, number][] = [
-    chennaiHarbor,
+  // Direct route vs Safe Detour Alternative Route
+  const isDirectRouteUnsafe = selectedZone.id === 'zone-d';
+
+  const directUnsafePolyline: [number, number][] = [
+    vesselPos,
+    [13.25, 80.45],
+    [selectedZone.lat, selectedZone.lng],
+  ];
+
+  const safeDetourPolyline: [number, number][] = [
+    vesselPos,
     [13.15, 80.36],
+    [13.28, 80.40],
     [selectedZone.lat, selectedZone.lng],
   ];
 
   return (
     <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-cyan-500/20 shadow-2xl glass-panel">
-      {/* Map Header Overlay */}
+      {/* Header Overlay */}
       <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-xs font-medium text-cyan-200">
         <Compass className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: '10s' }} />
-        <span>Live Marine & Maritime Boundary Map — Chennai Sector</span>
+        <span>Live Geofenced Marine Map — Click Map to Reposition Vessel</span>
       </div>
 
       {/* Layer Toggle Control Panel */}
-      <div className="absolute top-3 right-3 z-[1000] p-2.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 text-xs text-slate-200 shadow-xl space-y-1.5 w-48">
+      <div className="absolute top-3 right-3 z-[1000] p-2.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 text-xs text-slate-200 shadow-xl space-y-1.5 w-52">
         <div className="flex items-center gap-1.5 font-bold text-cyan-400 pb-1 border-b border-slate-800">
           <Layers className="w-3.5 h-3.5" />
-          <span>Map Layers</span>
+          <span>Map Layers & Geofences</span>
         </div>
+        <label className="flex items-center justify-between cursor-pointer hover:text-cyan-300">
+          <span>Geofence Polygons</span>
+          <input
+            type="checkbox"
+            checked={layers.geofencePolygons}
+            onChange={(e) => setLayers({ ...layers, geofencePolygons: e.target.checked })}
+            className="accent-cyan-500 rounded cursor-pointer"
+          />
+        </label>
         <label className="flex items-center justify-between cursor-pointer hover:text-cyan-300">
           <span>Fishing Zones</span>
           <input
@@ -140,7 +177,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
           />
         </label>
         <label className="flex items-center justify-between cursor-pointer hover:text-cyan-300">
-          <span>Safety Bubble ({safetyBubbleRadiusKm}km)</span>
+          <span>Safety Radius ({safetyBubbleRadiusKm}km)</span>
           <input
             type="checkbox"
             checked={layers.safetyBubble}
@@ -149,7 +186,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
           />
         </label>
         <label className="flex items-center justify-between cursor-pointer hover:text-cyan-300">
-          <span>Cyclone & Track</span>
+          <span>Cyclone Track</span>
           <input
             type="checkbox"
             checked={layers.cyclone}
@@ -164,18 +201,20 @@ export const MarineMap: React.FC<MarineMapProps> = ({
         center={[13.12, 80.40]}
         zoom={10}
         scrollWheelZoom={true}
-        className="w-full h-full"
+        className="w-full h-full cursor-crosshair"
       >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CARTO</a> dark'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
+        <MapClickHandler onRelocate={onMapClickRelocate} />
+
         {/* Vessel Marker */}
         {layers.vessel && (
-          <Marker position={chennaiHarbor} icon={vesselIcon}>
-            <Tooltip permanent direction="top" offset={[0, -16]} className="bg-slate-900 border border-cyan-500 text-cyan-300 font-bold text-xs">
-              Vessel (Chennai Harbor)
+          <Marker position={vesselPos} icon={createVesselIcon()}>
+            <Tooltip permanent direction="top" offset={[0, -18]} className="bg-slate-900 border border-cyan-400 text-cyan-300 font-bold text-xs">
+              Vessel ({vesselPos[0].toFixed(2)}°, {vesselPos[1].toFixed(2)}°)
             </Tooltip>
           </Marker>
         )}
@@ -183,7 +222,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
         {/* Personal Safety Radius Circle */}
         {layers.safetyBubble && (
           <Circle
-            center={chennaiHarbor}
+            center={vesselPos}
             radius={safetyBubbleRadiusKm * 1000}
             pathOptions={{
               color: '#06b6d4',
@@ -195,10 +234,31 @@ export const MarineMap: React.FC<MarineMapProps> = ({
           />
         )}
 
+        {/* 4 GEOFENCE POLYGONS (SAFE, CAUTION, PROHIBITED, HAZARD) */}
+        {layers.geofencePolygons &&
+          GEOFENCE_POLYGONS.map((gZone) => {
+            const pathOpts =
+              gZone.type === 'SAFE'
+                ? { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.15, weight: 2 }
+                : gZone.type === 'CAUTION'
+                ? { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.20, weight: 2, dashArray: '4, 4' }
+                : gZone.type === 'PROHIBITED'
+                ? { color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.30, weight: 2.5 }
+                : { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.25, weight: 2 };
+
+            return (
+              <Polygon key={gZone.id} positions={gZone.polygon} pathOptions={pathOpts}>
+                <Tooltip permanent direction="center" className="bg-slate-950 border text-[10px] font-bold text-slate-100">
+                  {gZone.name} ({gZone.type})
+                </Tooltip>
+              </Polygon>
+            );
+          })}
+
         {/* MARITIME BOUNDARIES LAYER */}
         {layers.boundaries && (
           <>
-            {/* International Maritime Boundary Line (IMBL) */}
+            {/* IMBL Polyline */}
             <Polyline
               positions={MARITIME_BOUNDARIES.imblPolyline}
               pathOptions={{
@@ -213,7 +273,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
               </Tooltip>
             </Polyline>
 
-            {/* 12nm Territorial Waters Limit Line */}
+            {/* 12nm Territorial Waters */}
             <Polyline
               positions={MARITIME_BOUNDARIES.territorialLimitPolyline}
               pathOptions={{
@@ -222,48 +282,54 @@ export const MarineMap: React.FC<MarineMapProps> = ({
                 dashArray: '4, 4',
                 opacity: 0.85,
               }}
-            >
-              <Tooltip direction="left" offset={[-10, 0]} className="bg-amber-950 border border-amber-500 text-amber-300 font-bold text-[10px]">
-                {t.border.layers.territorial}
-              </Tooltip>
-            </Polyline>
-
-            {/* Restricted Naval Defense Zone Polygon/Circle */}
-            <Circle
-              center={[
-                MARITIME_BOUNDARIES.restrictedNavalZone.lat,
-                MARITIME_BOUNDARIES.restrictedNavalZone.lng,
-              ]}
-              radius={MARITIME_BOUNDARIES.restrictedNavalZone.radiusKm * 1000}
-              pathOptions={{
-                color: '#dc2626',
-                fillColor: '#dc2626',
-                fillOpacity: 0.22,
-                weight: 2,
-                dashArray: '4, 4',
-              }}
-            >
-              <Tooltip permanent direction="center" className="bg-red-950 border border-red-500 text-red-200 font-bold text-[10px]">
-                PROHIBITED NAVAL ZONE
-              </Tooltip>
-            </Circle>
+            />
           </>
         )}
 
-        {/* Recommended Route Line */}
+        {/* ROUTE AVOIDANCE RENDERING */}
         {layers.route && (
-          <Polyline
-            positions={routePolyline}
-            pathOptions={{
-              color: '#38bdf8',
-              weight: 3.5,
-              opacity: 0.9,
-              dashArray: '8, 8',
-            }}
-          />
+          <>
+            {isDirectRouteUnsafe ? (
+              <>
+                {/* Red dashed line for unsafe direct route */}
+                <Polyline
+                  positions={directUnsafePolyline}
+                  pathOptions={{
+                    color: '#ef4444',
+                    weight: 2,
+                    dashArray: '4, 6',
+                    opacity: 0.6,
+                  }}
+                />
+                {/* Glowing cyan detour safe route */}
+                <Polyline
+                  positions={safeDetourPolyline}
+                  pathOptions={{
+                    color: '#38bdf8',
+                    weight: 4,
+                    opacity: 0.95,
+                  }}
+                >
+                  <Tooltip permanent direction="top" className="bg-cyan-950 border border-cyan-400 text-cyan-300 font-bold text-[10px]">
+                    Alternative Safe Detour Route
+                  </Tooltip>
+                </Polyline>
+              </>
+            ) : (
+              <Polyline
+                positions={safeDetourPolyline}
+                pathOptions={{
+                  color: '#38bdf8',
+                  weight: 3.5,
+                  opacity: 0.9,
+                  dashArray: '8, 8',
+                }}
+              />
+            )}
+          </>
         )}
 
-        {/* Fishing Zones Markers & Circles */}
+        {/* Fishing Zones Markers */}
         {layers.zones &&
           FISHING_ZONES.map((zone) => {
             const color = zone.isRestrictedExcluded
@@ -309,10 +375,6 @@ export const MarineMap: React.FC<MarineMapProps> = ({
                             <span>Distance:</span>
                             <span className="font-semibold">{zone.distanceKm} km</span>
                           </div>
-                          <div className="flex justify-between text-xs">
-                            <span>Border Safety:</span>
-                            <span className="font-bold uppercase text-emerald-400">{zone.borderSafety}</span>
-                          </div>
                         </>
                       )}
                       <button
@@ -328,48 +390,40 @@ export const MarineMap: React.FC<MarineMapProps> = ({
             );
           })}
 
-        {/* Cyclone Marker & Danger Radius */}
+        {/* Cyclone Marker */}
         {layers.cyclone && (
-          <>
-            <Circle
-              center={[CYCLONE_VARUNA.lat, CYCLONE_VARUNA.lng]}
-              radius={CYCLONE_VARUNA.dangerRadiusKm * 1000}
-              pathOptions={{
-                color: '#ef4444',
-                fillColor: '#ef4444',
-                fillOpacity: 0.18,
-                weight: 2,
-              }}
-            />
-            <Marker position={[CYCLONE_VARUNA.lat, CYCLONE_VARUNA.lng]} icon={cycloneIcon}>
-              <Popup>
-                <div className="p-1 text-slate-100 space-y-1">
-                  <div className="font-bold text-red-400 text-sm">{CYCLONE_VARUNA.name}</div>
-                  <div className="text-xs">Wind: {CYCLONE_VARUNA.windSpeedKmh} km/h</div>
-                </div>
-              </Popup>
-            </Marker>
-          </>
+          <Marker position={[CYCLONE_VARUNA.lat, CYCLONE_VARUNA.lng]} icon={cycloneIcon}>
+            <Popup>
+              <div className="p-1 text-slate-100 space-y-1">
+                <div className="font-bold text-red-400 text-sm">{CYCLONE_VARUNA.name}</div>
+                <div className="text-xs">Wind: {CYCLONE_VARUNA.windSpeedKmh} km/h</div>
+              </div>
+            </Popup>
+          </Marker>
         )}
       </MapContainer>
 
-      {/* Bottom Map Legend Overlay */}
-      <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-cyan-500/20 text-xs">
+      {/* Map Legend Overlay */}
+      <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-950/90 backdrop-blur-md border border-cyan-500/30 text-xs font-semibold text-slate-200">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span className="text-slate-300">High (80%+)</span>
+          <span className="w-3 h-3 rounded bg-emerald-500"></span>
+          <span>🟢 Safe</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-          <span className="text-slate-300">Moderate (50-79%)</span>
+          <span className="w-3 h-3 rounded bg-amber-500"></span>
+          <span>🟡 Caution</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
-          <span className="text-slate-300">Restricted / IMBL Zone</span>
+          <span className="w-3 h-3 rounded bg-red-600"></span>
+          <span>🔴 Prohibited</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-0 border-t-2 border-dashed border-red-500"></span>
-          <span className="text-slate-300">IMBL Line</span>
+          <span className="w-3 h-3 rounded bg-orange-500"></span>
+          <span>🟠 Hazard</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-cyan-400 border border-white"></span>
+          <span>🔵 Vessel</span>
         </div>
       </div>
     </div>

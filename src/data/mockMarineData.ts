@@ -9,6 +9,7 @@ export type IntentType =
   | 'MARINE_CONDITIONS'
   | 'ROUTE'
   | 'BORDER'
+  | 'GEOFENCE'
   | 'FISHING_ZONE'
   | 'FISHING_RECOMMENDATION'
   | 'WHY_EXPLANATION'
@@ -91,6 +92,26 @@ export interface MaritimeBoundaryDataset {
   vesselBorderStatus: 'safe' | 'caution' | 'restricted';
 }
 
+export interface PolygonZone {
+  id: string;
+  name: string;
+  type: 'SAFE' | 'CAUTION' | 'PROHIBITED' | 'HAZARD';
+  polygon: Array<[number, number]>;
+  severity: 'LOW' | 'MODERATE' | 'HIGH' | 'EXTREME';
+  description: string;
+}
+
+export interface GeofenceState {
+  currentZoneType: 'SAFE' | 'CAUTION' | 'PROHIBITED' | 'HAZARD';
+  currentZoneName: string;
+  distanceToRestrictedKm: number;
+  distanceToHazardKm: number;
+  isInsideProhibited: boolean;
+  isInsideHazard: boolean;
+  isApproachingRestricted: boolean;
+  isApproachingHazard: boolean;
+}
+
 export interface DynamicAIResponse {
   intent: IntentType;
   summary: string;
@@ -124,6 +145,7 @@ export interface DynamicAIResponse {
     distanceKm: number;
     travelTimeMin: number;
     routeRisk: string;
+    isAlternativeDetour?: boolean;
   };
   marineData?: {
     sst: number;
@@ -137,6 +159,7 @@ export interface DynamicAIResponse {
     nearestSafeZone: string;
     restrictedZoneName: string;
   };
+  geofenceData?: GeofenceState;
 }
 
 export interface ChatHistoryMessage {
@@ -366,6 +389,155 @@ export const MARITIME_BOUNDARIES: MaritimeBoundaryDataset = {
   vesselBorderStatus: 'safe',
 };
 
+// 4 SIMULATED GEOFENCE POLYGON ZONES FOR CHENNAI OFFSHORE SECTOR
+export const GEOFENCE_POLYGONS: PolygonZone[] = [
+  {
+    id: 'safe-zone-alpha',
+    name: 'Permitted Sector Alpha (Zone A Waters)',
+    type: 'SAFE',
+    polygon: [
+      [13.15, 80.35],
+      [13.35, 80.38],
+      [13.35, 80.50],
+      [13.15, 80.48],
+    ],
+    severity: 'LOW',
+    description: 'High-yield fishing waters with verified safe operating clearances.',
+  },
+  {
+    id: 'caution-zone-buffer',
+    name: 'Maritime Boundary Buffer Sector',
+    type: 'CAUTION',
+    polygon: [
+      [13.00, 80.38],
+      [13.15, 80.35],
+      [13.15, 80.48],
+      [13.00, 80.45],
+    ],
+    severity: 'MODERATE',
+    description: 'Transition buffer area approaching International Maritime Boundary Line.',
+  },
+  {
+    id: 'prohibited-naval-sector',
+    name: 'Pulicat Naval Prohibited Defense Sector',
+    type: 'PROHIBITED',
+    polygon: [
+      [13.35, 80.46],
+      [13.48, 80.46],
+      [13.48, 80.60],
+      [13.35, 80.60],
+    ],
+    severity: 'EXTREME',
+    description: 'Strictly prohibited naval defense territory. Civilian fishing forbidden.',
+  },
+  {
+    id: 'hazard-cyclone-swell',
+    name: 'Cyclone VARUNA High Swell Hazard Sector',
+    type: 'HAZARD',
+    polygon: [
+      [12.75, 80.42],
+      [12.95, 80.42],
+      [12.95, 80.58],
+      [12.75, 80.58],
+    ],
+    severity: 'HIGH',
+    description: 'Active hazard area affected by high wave swell and squall wind gusts.',
+  },
+];
+
+// SIMULATION WAYPOINT TRACK FOR ANIMATED DEMO
+export const SIMULATION_WAYPOINTS: Array<[number, number]> = [
+  [13.0827, 80.2707], // 1. Chennai Harbor (SAFE)
+  [13.1200, 80.3200], // 2. Heading East-North-East (SAFE)
+  [13.2000, 80.4000], // 3. Zone A Alpha (SAFE)
+  [13.1000, 80.4200], // 4. Approaching Boundary Buffer (CAUTION)
+  [13.3800, 80.4900], // 5. Entering Pulicat Prohibited Defense Sector (PROHIBITED ALERT)
+  [12.8500, 80.4800], // 6. Entering Cyclone Swell Hazard Sector (HAZARD ALERT)
+  [13.2500, 80.4500], // 7. Returning to Zone A Safe Waters (SAFE)
+];
+
+// POINT-IN-POLYGON RAY CASTING ALGORITHM
+export function isPointInPolygon(point: [number, number], polygon: Array<[number, number]>): boolean {
+  const x = point[0];
+  const y = point[1];
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+// HAVERSINE DISTANCE HELPER (KM)
+export function getDistanceKm(coord1: [number, number], coord2: [number, number]): number {
+  const R = 6371; // Earth radius in KM
+  const dLat = ((coord2[0] - coord1[0]) * Math.PI) / 180;
+  const dLng = ((coord2[1] - coord1[1]) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((coord1[0] * Math.PI) / 180) *
+      Math.cos((coord2[0] * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
+// CALCULATE GEOFENCE STATE FOR ANY GIVEN VESSEL POSITION
+export function evaluateVesselGeofence(vesselPos: [number, number]): GeofenceState {
+  let currentZoneType: 'SAFE' | 'CAUTION' | 'PROHIBITED' | 'HAZARD' = 'SAFE';
+  let currentZoneName = 'Permitted Domestic Waters (Chennai Sector)';
+
+  const prohibitedPoly = GEOFENCE_POLYGONS.find((p) => p.type === 'PROHIBITED')!;
+  const hazardPoly = GEOFENCE_POLYGONS.find((p) => p.type === 'HAZARD')!;
+  const cautionPoly = GEOFENCE_POLYGONS.find((p) => p.type === 'CAUTION')!;
+  const safePoly = GEOFENCE_POLYGONS.find((p) => p.type === 'SAFE')!;
+
+  const isInsideProhibited = isPointInPolygon(vesselPos, prohibitedPoly.polygon);
+  const isInsideHazard = isPointInPolygon(vesselPos, hazardPoly.polygon);
+  const isInsideCaution = isPointInPolygon(vesselPos, cautionPoly.polygon);
+  const isInsideSafe = isPointInPolygon(vesselPos, safePoly.polygon);
+
+  if (isInsideProhibited) {
+    currentZoneType = 'PROHIBITED';
+    currentZoneName = prohibitedPoly.name;
+  } else if (isInsideHazard) {
+    currentZoneType = 'HAZARD';
+    currentZoneName = hazardPoly.name;
+  } else if (isInsideCaution) {
+    currentZoneType = 'CAUTION';
+    currentZoneName = cautionPoly.name;
+  } else if (isInsideSafe) {
+    currentZoneType = 'SAFE';
+    currentZoneName = safePoly.name;
+  }
+
+  // Calculate distances to prohibited and hazard centers
+  const distToRestricted = getDistanceKm(vesselPos, [13.4000, 80.5200]);
+  const distToHazard = getDistanceKm(vesselPos, [12.8500, 80.5000]);
+
+  const isApproachingRestricted = !isInsideProhibited && distToRestricted <= 15;
+  const isApproachingHazard = !isInsideHazard && distToHazard <= 15;
+
+  return {
+    currentZoneType,
+    currentZoneName,
+    distanceToRestrictedKm: distToRestricted,
+    distanceToHazardKm: distToHazard,
+    isInsideProhibited,
+    isInsideHazard,
+    isApproachingRestricted,
+    isApproachingHazard,
+  };
+}
+
 /**
  * Detect Intent and resolve multi-turn conversation context
  */
@@ -377,14 +549,23 @@ export function detectIntentAndContext(
 
   // Check for greetings
   if (
-    /^(hi|hello|vanakkam|வணக்கம்|नमस्ते|நமస్కாரம்|hey|greetings|good morning)/i.test(q)
+    /^(hi|hello|vanakkam|வணக்கம்|नमस्ते|நமஸ்காரம்|hey|greetings|good morning)/i.test(q)
   ) {
     return { intent: 'GREETING' };
   }
 
+  // Check for Geofence / Prohibited Zone / Danger Intent
+  if (
+    /geofence|prohibited|danger|restricted zone|hazard ahead|தடைசெய்யப்பட்ட|ஆபத்து|ஜியோஃபென்சிங்|प्रतिबंधित|निषेध/i.test(
+      q
+    )
+  ) {
+    return { intent: 'GEOFENCE', resolvedContext: 'Geofence Polygon & Danger Detection' };
+  }
+
   // Check for Border / Maritime Boundary Intent
   if (
-    /border|boundary|imbl|restricted|territorial|எல்லை|எல்லைக்கோட்டிலிருந்து|सीमा|సరిஹద్దు|prohibited/i.test(
+    /border|boundary|imbl|territorial|எல்லை|எல்லைக்கோட்டிலிருந்து|सीमा|సరిహద్దు/i.test(
       q
     )
   ) {
@@ -466,7 +647,8 @@ export function generateDynamicAIResponse(
   query: string,
   lang: Language,
   isOffline: boolean,
-  history: ChatHistoryMessage[] = []
+  history: ChatHistoryMessage[] = [],
+  currentVesselPos: [number, number] = [13.0827, 80.2707]
 ): DynamicAIResponse {
   const { intent, resolvedContext } = detectIntentAndContext(query, history);
   const t = translations[lang].ai.intents;
@@ -474,6 +656,7 @@ export function generateDynamicAIResponse(
 
   const zoneA = FISHING_ZONES[0];
   const chennai = COASTAL_LOCATIONS[0];
+  const geofenceState = evaluateVesselGeofence(currentVesselPos);
 
   const whyExpl = {
     sstNote:
@@ -494,8 +677,8 @@ export function generateDynamicAIResponse(
         : 'Swell height of 1.1m is safe for trawler navigation.',
     cycloneNote:
       lang === 'ta'
-        ? 'வருணா புயல் 145 கி.மீ தொலைவில் வடகிழக்கு திசையில் நகர்வதால் ஆபத்து இல்லை.'
-        : 'Cyclone VARUNA is 145 km East-Southeast moving away, leaving Zone A safe.',
+        ? 'மண்டலம் A கடற்படை தடைசெய்யப்பட்ட மண்டலங்களிலிருந்து பாதுகாப்பான தூரத்தில் அமைந்துள்ளது.'
+        : 'Zone A is safely outside prohibited naval defense and cyclone hazard polygons.',
   };
 
   switch (intent) {
@@ -503,6 +686,24 @@ export function generateDynamicAIResponse(
       return {
         intent: 'GREETING',
         summary: `${prefix}${t.greeting}`,
+      };
+
+    case 'GEOFENCE':
+      return {
+        intent: 'GEOFENCE',
+        summary: `${prefix}${
+          geofenceState.isInsideProhibited
+            ? lang === 'ta'
+              ? '⚠ எச்சரிக்கை: உங்கள் படகு தற்போது கடற்படை தடைசெய்யப்பட்ட மண்டலத்தில் நுழைந்துள்ளது! உடனடியாக பாதுகாப்பான பகுதிக்கு திரும்பவும்.'
+              : '⚠ ALERT: Your vessel is currently inside a PROHIBITED NAVAL DEFENSE ZONE. Move back toward permitted domestic waters immediately.'
+            : geofenceState.isInsideHazard
+            ? lang === 'ta'
+              ? '⚠ எச்சரிக்கை: உங்கள் படகு அதிக அலை மற்றும் புயல் ஆபத்து நிறைந்த பகுதியில் உள்ளது.'
+              : '⚠ ALERT: Your vessel is currently inside an ACTIVE MARINE HAZARD ZONE. Exercise extreme caution.'
+            : t.geofenceSummary
+        }`,
+        contextResolved: resolvedContext,
+        geofenceData: geofenceState,
       };
 
     case 'BORDER':
@@ -572,6 +773,7 @@ export function generateDynamicAIResponse(
           distanceKm: zoneA.distanceKm,
           travelTimeMin: zoneA.travelTimeMin,
           routeRisk: 'LOW RISK',
+          isAlternativeDetour: false,
         },
       };
 
@@ -625,8 +827,8 @@ export function generateDynamicAIResponse(
             ? 'குளோரோபில் செறிவு (88%) அதிக அளவிலான இரையை (Plankton) குறிக்கிறது.'
             : 'High Chlorophyll concentration (88%) indicates rich feeding zones.',
           lang === 'ta'
-            ? 'எல்லைப் பாதுகாப்பு மதிப்பீடு: பாதுகாப்பானது (SAFE - 38.5 km from IMBL).'
-            : 'Border Safety: SAFE (38.5 km from IMBL line).',
+            ? 'ஜியோஃபென்சிங் நிலை: பாதுகாப்பானது (SAFE - 6.4 km from prohibited defense zone).'
+            : 'Geofence Status: SAFE (6.4 km from prohibited defense zone).',
           lang === 'ta'
             ? 'காலை 06:00 - 11:00 மணி வரை அலை மற்றும் காற்று பாதுகாப்பான எல்லைக்குள் உள்ளது.'
             : 'Optimal weather window from 06:00 to 11:00 AM with gentle winds.',

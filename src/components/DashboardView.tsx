@@ -6,8 +6,10 @@ import {
   CYCLONE_VARUNA,
   MARITIME_BOUNDARIES,
   type FishingZone,
+  type GeofenceState,
 } from '../data/mockMarineData';
 import { MarineMap } from './MarineMap';
+import { SimulationControlPanel, type AlertLogItem } from './SimulationControlPanel';
 import {
   Thermometer,
   Wind,
@@ -22,26 +24,62 @@ import {
   Clock,
   ExternalLink,
   Shield,
+  MapPin,
 } from 'lucide-react';
 
 interface DashboardViewProps {
   currentLang: Language;
   onNavigateToAI: (initialQuery?: string) => void;
   onNavigateToZone: (zone: FishingZone) => void;
+  vesselPos: [number, number];
+  geofenceState: GeofenceState;
+  isPlayingSim: boolean;
+  onTogglePlaySim: () => void;
+  onResetSim: () => void;
+  simSpeed: number;
+  onChangeSimSpeed: (speed: number) => void;
+  alertLogs: AlertLogItem[];
+  onClearAlertLogs: () => void;
+  onMapClickRelocate: (lat: number, lng: number) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   currentLang,
   onNavigateToAI,
   onNavigateToZone,
+  vesselPos,
+  geofenceState,
+  isPlayingSim,
+  onTogglePlaySim,
+  onResetSim,
+  simSpeed,
+  onChangeSimSpeed,
+  alertLogs,
+  onClearAlertLogs,
+  onMapClickRelocate,
 }) => {
   const t = translations[currentLang];
   const chennai = COASTAL_LOCATIONS[0];
   const recommendedZone = FISHING_ZONES[0];
 
+  const getStatusColor = (type: string) => {
+    switch (type) {
+      case 'SAFE':
+        return 'text-emerald-400 border-emerald-500/40 bg-emerald-500/20';
+      case 'CAUTION':
+        return 'text-amber-400 border-amber-500/40 bg-amber-500/20';
+      case 'PROHIBITED':
+        return 'text-red-400 border-red-500/60 bg-red-600/30 animate-pulse';
+      case 'HAZARD':
+        return 'text-orange-400 border-orange-500/60 bg-orange-500/30 animate-pulse';
+      default:
+        return 'text-cyan-300 border-slate-700 bg-slate-900';
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Top Banner / Hero Greeting */}
+      {/* Top Hero Banner */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/40 border border-cyan-500/30 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
@@ -73,9 +111,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {/* VESSEL STATUS DASHBOARD CARD */}
+      <div className="p-5 rounded-2xl glass-panel-accent border-cyan-500/30 space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-cyan-500/20">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-sm font-black text-slate-100 uppercase tracking-wider">
+              {t.geofence.vesselStatusTitle}
+            </h3>
+          </div>
+
+          <span
+            className={`px-3 py-1 text-xs font-black rounded-full border shadow uppercase ${getStatusColor(
+              geofenceState.currentZoneType
+            )}`}
+          >
+            Status: {t.geofence.types[geofenceState.currentZoneType.toLowerCase() as keyof typeof t.geofence.types]}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+            <span className="text-slate-400 text-[11px] block">GPS Latitude</span>
+            <strong className="text-slate-100 font-mono text-xs">{vesselPos[0].toFixed(4)}° N</strong>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+            <span className="text-slate-400 text-[11px] block">GPS Longitude</span>
+            <strong className="text-slate-100 font-mono text-xs">{vesselPos[1].toFixed(4)}° E</strong>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+            <span className="text-slate-400 text-[11px] block">{t.geofence.distanceToRestricted}</span>
+            <strong className="text-amber-400 font-mono text-sm">{geofenceState.distanceToRestrictedKm} km</strong>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+            <span className="text-slate-400 text-[11px] block">{t.geofence.distanceToHazard}</span>
+            <strong className="text-orange-400 font-mono text-sm">{geofenceState.distanceToHazardKm} km</strong>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+            <span className="text-slate-400 text-[11px] block">Current Sector</span>
+            <strong className="text-cyan-300 font-bold truncate block mt-0.5">{geofenceState.currentZoneName}</strong>
+          </div>
+        </div>
+      </div>
+
       {/* 6 Marine Telemetry Metrics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {/* Air Temp */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.dashboard.temperature}</span>
@@ -85,7 +169,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="text-[10px] text-emerald-400 font-medium">Normal thermal range</div>
         </div>
 
-        {/* Wind Speed */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.dashboard.windSpeed}</span>
@@ -95,7 +178,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="text-[10px] text-cyan-300 font-medium">Direction: {chennai.windDir}</div>
         </div>
 
-        {/* Wave Height */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.dashboard.waveHeight}</span>
@@ -105,7 +187,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="text-[10px] text-emerald-400 font-medium">Mild swell condition</div>
         </div>
 
-        {/* Sea Surface Temp (SST) */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.dashboard.sst}</span>
@@ -115,17 +196,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="text-[10px] text-emerald-400 font-medium">ISRO Satellite Data</div>
         </div>
 
-        {/* Border Safety Metric Card */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.border.borderSafety}</span>
             <Shield className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-xl font-black text-emerald-400 uppercase">{t.border.states.safe}</div>
-          <div className="text-[10px] text-slate-300 font-medium">IMBL: {MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km away</div>
+          <div className="text-[10px] text-slate-300 font-medium">IMBL: {MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km</div>
         </div>
 
-        {/* Weather Condition */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>{t.dashboard.weatherCondition}</span>
@@ -138,7 +217,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Main Grid: Recommended Zone Summary & Safety Overview Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recommended Fishing Zone Card (2 Columns) */}
         <div className="lg:col-span-2 p-5 rounded-2xl glass-panel-accent space-y-4 border-cyan-500/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -146,9 +224,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <Compass className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-slate-200">
-                  {t.dashboard.recommendedZone}
-                </h3>
+                <h3 className="text-sm font-bold text-slate-200">{t.dashboard.recommendedZone}</h3>
                 <p className="text-xs text-emerald-400 font-bold">{recommendedZone.name}</p>
               </div>
             </div>
@@ -157,7 +233,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
 
-          {/* Key Metrics Row */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
             <div>
               <span className="text-slate-400 text-[11px] block">{t.dashboard.confidence}</span>
@@ -204,7 +279,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Safety & Hazard Summary Card (1 Column) */}
         <div className="p-5 rounded-2xl glass-panel space-y-4 border-amber-500/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -219,13 +293,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2 text-xs">
-            {/* Border Proximity Banner */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-300">
               <div className="flex items-center gap-1.5 font-bold mb-0.5">
                 <Shield className="w-4 h-4 text-emerald-400" />
-                <span>Maritime Border Status: {t.border.states.safe}</span>
+                <span>Geofence Status: {geofenceState.currentZoneType}</span>
               </div>
-              Vessel position is {MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km inside Indian territorial waters.
+              Vessel is {geofenceState.distanceToRestrictedKm} km away from Pulicat Prohibited Defense Sector.
             </div>
 
             <div className="p-3 rounded-xl bg-slate-900/80 border border-amber-500/30 text-amber-200 leading-relaxed">
@@ -238,15 +311,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Main Interactive Map Section */}
+      {/* Simulation Controls Panel & Interactive Map Section */}
+      <SimulationControlPanel
+        currentLang={currentLang}
+        vesselPos={vesselPos}
+        geofenceState={geofenceState}
+        isPlaying={isPlayingSim}
+        onTogglePlay={onTogglePlaySim}
+        onReset={onResetSim}
+        simSpeed={simSpeed}
+        onChangeSpeed={onChangeSimSpeed}
+        alertLogs={alertLogs}
+        onClearLogs={onClearAlertLogs}
+      />
+
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
             <Navigation className="w-4 h-4 text-cyan-400" />
-            <span>Interactive Marine Intelligence & Maritime Boundary Map</span>
+            <span>{t.geofence.conceptLabel} — Interactive Map</span>
           </h3>
           <span className="text-xs text-slate-400 font-mono">
-            Showing IMBL Boundary Line, Defense Sector & Recommended Zone A
+            Click Map to Reposition Vessel | Showing Geofence Polygons & Detour Routes
           </span>
         </div>
 
@@ -255,6 +341,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           selectedZoneId={recommendedZone.id}
           onSelectZone={onNavigateToZone}
           showRoute={true}
+          vesselPos={vesselPos}
+          onMapClickRelocate={onMapClickRelocate}
         />
       </div>
     </div>

@@ -60,6 +60,8 @@ export interface TranslationSchema {
       q8: string;
       q9: string;
       q10: string;
+      q11: string;
+      q12: string;
     };
     intents: {
       greeting: string;
@@ -69,8 +71,37 @@ export interface TranslationSchema {
       routeSummary: string;
       marineSummary: string;
       borderSummary: string;
+      geofenceSummary: string;
       whySummary: string;
       unknownClarification: string;
+    };
+  };
+  geofence: {
+    title: string;
+    subtitle: string;
+    conceptLabel: string;
+    vesselStatusTitle: string;
+    prohibitedEntryTitle: string;
+    prohibitedEntryText: string;
+    hazardEntryTitle: string;
+    hazardEntryText: string;
+    approachingRestricted: string;
+    approachingHazard: string;
+    unsafeRouteDetected: string;
+    alternativeRouteGenerated: string;
+    startSimulation: string;
+    pauseSimulation: string;
+    resetSimulation: string;
+    simulationSpeed: string;
+    alertHistory: string;
+    clearHistory: string;
+    distanceToRestricted: string;
+    distanceToHazard: string;
+    types: {
+      safe: string;
+      caution: string;
+      prohibited: string;
+      hazard: string;
     };
   };
   border: {
@@ -215,8 +246,8 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ORCA AI Marine Assistant",
       subtitle: "Context-Aware Dynamic Conversational AI for Marine Navigation & Fishing",
-      inputPlaceholder: "Ask about weather, border proximity, safe zones, route, or cyclone...",
-      analyzing: "Detecting intent & processing marine telemetry...",
+      inputPlaceholder: "Ask about geofence, prohibited zones, weather, safe routes, or cyclone...",
+      analyzing: "Detecting intent & evaluating geofence polygons...",
       suggestedQuestionsTitle: "Suggested Questions",
       whyRecommendation: "Why this recommendation?",
       keyReasons: "Key Ocean & Weather Factors",
@@ -235,6 +266,8 @@ export const translations: Record<Language, TranslationSchema> = {
         q8: "Vanakkam ORCA!",
         q9: "Am I close to the maritime border?",
         q10: "Is Zone A safe from border restrictions?",
+        q11: "Am I currently in a prohibited zone?",
+        q12: "Is there any danger or hazard ahead?",
       },
       intents: {
         greeting: "Greetings Captain! I am ORCA, your AI Marine Assistant. How can I assist your voyage today?",
@@ -244,8 +277,37 @@ export const translations: Record<Language, TranslationSchema> = {
         routeSummary: "Optimal Route from Chennai Harbor to Zone A (North East Shelf): Distance 18.4 km, estimated travel duration 52 minutes. Route Safety: LOW RISK.",
         marineSummary: "Current Marine Parameters: Sea Surface Temperature (SST) is 28.2°C, Chlorophyll index is 88%, Current velocity is 0.8 knots SW.",
         borderSummary: "Maritime Border Status: Your vessel is 38.5 km inside domestic Indian territorial waters (SAFE). Zone A is fully compliant with maritime boundary regulations.",
-        whySummary: "Zone A is recommended due to optimal Sea Surface Temperature (28.2°C), high chlorophyll concentration (88%), gentle swell (1.1m), and safe distance from International Maritime Boundaries.",
-        unknownClarification: "I didn't quite understand that. Would you like to check tomorrow's weather, safe fishing zones, border proximity, or route navigation?",
+        geofenceSummary: "Geofence Assessment: Vessel is currently in a SAFE zone. Restricted Naval Zone is 6.4 km away, and High Swell Hazard is 12.8 km away.",
+        whySummary: "Zone A is recommended due to optimal Sea Surface Temperature (28.2°C), high chlorophyll concentration (88%), gentle swell (1.1m), and safe clearance from prohibited naval defense zones.",
+        unknownClarification: "I didn't quite understand that. Would you like to check tomorrow's weather, safe fishing zones, geofence alerts, or route navigation?",
+      },
+    },
+    geofence: {
+      title: "Vessel Geofencing & Zone Detection System",
+      subtitle: "Real-time Point-in-Polygon Detection for Prohibited Defense & Hazard Sectors",
+      conceptLabel: "Fishing Zones → Safe Routes → Geofencing & Alerts",
+      vesselStatusTitle: "Vessel Safety Status",
+      prohibitedEntryTitle: "⚠ PROHIBITED ZONE ENTRY",
+      prohibitedEntryText: "Vessel has entered a restricted maritime area! Turn back immediately toward permitted fishing waters.",
+      hazardEntryTitle: "⚠ HAZARD ZONE ENTRY",
+      hazardEntryText: "Vessel has entered an active marine hazard area. Severe wave swell and squall conditions present.",
+      approachingRestricted: "⚠ APPROACHING RESTRICTED AREA",
+      approachingHazard: "⚠ APPROACHING HAZARD AREA",
+      unsafeRouteDetected: "⚠ Unsafe direct route detected crossing prohibited zone! Alternative safe route generated.",
+      alternativeRouteGenerated: "Alternative Safe Detour Route Active",
+      startSimulation: "▶ Start Simulation",
+      pauseSimulation: "⏸ Pause",
+      resetSimulation: "↻ Reset",
+      simulationSpeed: "Sim Speed",
+      alertHistory: "Geofence Alert History",
+      clearHistory: "Clear Log History",
+      distanceToRestricted: "Dist. to Restricted Zone",
+      distanceToHazard: "Dist. to Nearest Hazard",
+      types: {
+        safe: "SAFE",
+        caution: "CAUTION",
+        prohibited: "PROHIBITED",
+        hazard: "HAZARD",
       },
     },
     border: {
@@ -388,7 +450,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ஆர்கா AI கடல் உதவியாளர்",
       subtitle: "கேள்விகளின் நோக்கத்தை உணர்ந்து துல்லியமான கடல் மற்றும் பாதுகாப்பு வழிகாட்டுதலை அளிக்கும் AI",
-      inputPlaceholder: "வானிலை, எல்லைப் பாதுகாப்பு, மண்டலங்கள், பாதை அல்லது புயல் பற்றிக் கேளுங்கள்...",
+      inputPlaceholder: "வானிலை, ஜியோஃபென்சிங், தடைசெய்யப்பட்ட பகுதி, பாதை பற்றிக் கேளுங்கள்...",
       analyzing: "கேள்வியின் நோக்கத்தை பகுப்பாய்வு செய்து தரவுகளை பெறுகிறது...",
       suggestedQuestionsTitle: "பரிந்துரைக்கப்பட்ட கேள்விகள்",
       whyRecommendation: "இந்த பரிந்துரை ஏன்?",
@@ -408,6 +470,8 @@ export const translations: Record<Language, TranslationSchema> = {
         q8: "வணக்கம் ஆர்கா!",
         q9: "நான் சர்வதேச எல்லைக்கு அருகில் உள்ளேனா?",
         q10: "மண்டலம் A எல்லையில் இருந்து பாதுகாப்பானதா?",
+        q11: "நான் தடைசெய்யப்பட்ட மண்டலத்தில் உள்ளேனா?",
+        q12: "முன்னால் ஏதாவது ஆபத்து அல்லது புயல் உள்ளதா?",
       },
       intents: {
         greeting: "வணக்கம் கேப்டன்! நான் ஆர்கா (ORCA), உங்கள் AI கடல் உதவியாளர். உங்கள் இன்றைய கடல் பயணத்திற்கு நான் எவ்வாறு உதவட்டும்?",
@@ -416,9 +480,38 @@ export const translations: Record<Language, TranslationSchema> = {
         cycloneSummary: "வருணா புயல் தற்போது சென்னைக்கு கிழக்கு-தென்கிழக்கே 145 கி.மீ தொலைவில் வடகிழக்கு நோக்கி நகர்கிறது. எவ்வித நேரடி ஆபத்தும் இல்லை.",
         routeSummary: "சென்னை துறைமுகத்திலிருந்து மண்டலம் A-விற்கான உகந்த பாதை: தூரம் 18.4 கி.மீ, பயண நேரம் 52 நிமிடங்கள்.",
         marineSummary: "தற்போதைய கடல் அளவுருக்கள்: கடல் பரப்பு வெப்பநிலை (SST) 28.2°C, குளோரோபில் குறியீடு 88%, நீரோட்ட வேகம் 0.8 நாட்ஸ் SW.",
-        borderSummary: "கடல் எல்லை நிலை: உங்கள் படகு சர்வதேச எல்லைக்கோட்டிலிருந்து 38.5 கி.மீ இந்திய கடற்பகுதிக்குள் பாதுகாப்பாக உள்ளது (SAFE). மண்டலம் A முழுமையாக அனுமதிக்கப்பட்ட பகுதி.",
-        whySummary: "மண்டலம் A உகந்த வெப்பநிலை (28.2°C), அதிக குளோரோபில் (88%), குறைந்த அலை (1.1m) மற்றும் சர்வதேச எல்லைப் பாதுகாப்பு தூரம் காரணமாக பரிந்துரைக்கப்படுகிறது.",
-        unknownClarification: "மன்னிக்கவும், உங்கள் கேள்வி எனக்குப் புரியவில்லை. நாளை வானிலை, பாதுகாப்பான மண்டலங்கள், எல்லைத் தூரம் அல்லது புயல் பற்றிக் கேட்க விரும்புகிறீர்களா?",
+        borderSummary: "கடல் எல்லை நிலை: உங்கள் படகு சர்வதேச எல்லைக்கோட்டிலிருந்து 38.5 கி.மீ இந்திய கடற்பகுதிக்குள் பாதுகாப்பாக உள்ளது (SAFE).",
+        geofenceSummary: "ஜியோஃபென்ஸ் பகுப்பாய்வு: படகு தற்போது பாதுகாப்பான மண்டலத்தில் (SAFE) உள்ளது. கடற்படை தடை மண்டலம் 6.4 கி.மீ தொலைவிலும், அலை அபாயம் 12.8 கி.மீ தொலைவிலும் உள்ளன.",
+        whySummary: "மண்டலம் A உகந்த வெப்பநிலை (28.2°C), அதிக குளோரோபில் (88%), குறைந்த அலை (1.1m) மற்றும் எல்லைப் பாதுகாப்பு தூரம் காரணமாக பரிந்துரைக்கப்படுகிறது.",
+        unknownClarification: "மன்னிக்கவும், உங்கள் கேள்வி எனக்குப் புரியவில்லை. நாளை வானிலை, பாதுகாப்பான மண்டலங்கள், ஜியோஃபென்ஸ் எச்சரிக்கை பற்றிக் கேட்க விரும்புகிறீர்களா?",
+      },
+    },
+    geofence: {
+      title: "படகு ஜியோஃபென்சிங் மற்றும் மண்டல கண்டறிதல் அமைப்பு",
+      subtitle: "தடைசெய்யப்பட்ட கடற்படை பாதுகாப்பு மண்டலங்களை உடனுக்குடன் கண்டறியும் ஜிபிஎஸ் தொழில்நுட்பம்",
+      conceptLabel: "மீன்பிடி மண்டலங்கள் → பாதுகாப்பான பாதைகள் → ஜியோஃபென்சிங் & எச்சரிக்கைகள்",
+      vesselStatusTitle: "படகு பாதுகாப்பு நிலை (VESSEL SAFETY STATUS)",
+      prohibitedEntryTitle: "⚠ தடைசெய்யப்பட்ட பகுதியில் நுழைந்துள்ளீர்கள் (PROHIBITED ZONE ENTRY)",
+      prohibitedEntryText: "படகு தடைசெய்யப்பட்ட கடற்படை மண்டலத்தில் நுழைந்துள்ளது! உடனடியாக பாதுகாப்பான பகுதிக்கு திரும்பவும்.",
+      hazardEntryTitle: "⚠ ஆபத்தான கடல் பகுதியில் நுழைந்துள்ளீர்கள் (HAZARD ZONE ENTRY)",
+      hazardEntryText: "படகு அதிக அலை மற்றும் புயல் ஆபத்து நிறைந்த மண்டலத்தில் நுழைந்துள்ளது.",
+      approachingRestricted: "⚠ எல்லைக் கட்டுப்பாட்டுப் பகுதியை நெருங்குகிறீர்கள் (APPROACHING RESTRICTED AREA)",
+      approachingHazard: "⚠ ஆபத்தானப் பகுதியை நெருங்குகிறீர்கள் (APPROACHING HAZARD AREA)",
+      unsafeRouteDetected: "⚠ நேரடி பாதை தடைசெய்யப்பட்ட மண்டலத்தை கடப்பதால் மாற்று பாதுகாப்பான பாதை உருவாக்கப்பட்டது.",
+      alternativeRouteGenerated: "மாற்று பாதுகாப்பான பாதை செயலில் உள்ளது",
+      startSimulation: "▶ இயக்கம் தொடங்கு (Start)",
+      pauseSimulation: "⏸ நிறுத்து (Pause)",
+      resetSimulation: "↻ மீட்டமை (Reset)",
+      simulationSpeed: "வேகம்",
+      alertHistory: "ஜியோஃபென்ஸ் எச்சரிக்கை வரலாறு",
+      clearHistory: "வரலாற்றை அழி",
+      distanceToRestricted: "தடை மண்டல தூரம்",
+      distanceToHazard: "அருகிலுள்ள ஆபத்து தூரம்",
+      types: {
+        safe: "பாதுகாப்பானது (SAFE)",
+        caution: "எச்சரிக்கை (CAUTION)",
+        prohibited: "தடைசெய்யப்பட்டது (PROHIBITED)",
+        hazard: "ஆபத்தானது (HAZARD)",
       },
     },
     border: {
@@ -561,7 +654,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ओर्का एआई समुद्री सहायक",
       subtitle: "प्रश्नों के इरादे को समझकर सटीक समुद्री व मत्स्य पालन सलाह देने वाला एआई",
-      inputPlaceholder: "मौसम, सीमा सुरक्षा, मार्ग या मत्स्य क्षेत्रों के बारे में पूछें...",
+      inputPlaceholder: "मौसम, जियोफेंस, प्रतिबंधित क्षेत्र के बारे में पूछें...",
       analyzing: "प्रश्न के उद्देश्य का विश्लेषण किया जा रहा है...",
       suggestedQuestionsTitle: "सुझाए गए प्रश्न",
       whyRecommendation: "यह सिफारिश क्यों?",
@@ -581,17 +674,48 @@ export const translations: Record<Language, TranslationSchema> = {
         q8: "नमस्ते ओर्का!",
         q9: "क्या मैं समुद्री सीमा के करीब हूँ?",
         q10: "क्या जोन A सीमा प्रतिबंधों से सुरक्षित है?",
+        q11: "क्या मैं वर्तमान में प्रतिबंधित क्षेत्र में हूँ?",
+        q12: "क्या आगे कोई खतरा या चक्रवात है?",
       },
       intents: {
-        greeting: "नमस्कार कप्तान! मैं ओर्का (ORCA), आपका एआई समुद्री सहायक हूँ। आज आपकी यात्रा में मैं कैसे मदद कर सकता हूँ?",
-        weatherSummary: "चेन्नई तट मौसम पूर्वानुमान: कल सुबह 14.2 किमी/घंटा उत्तर-पूर्वी हवाओं और 1.1 मीटर लहरों के साथ साफ आसमान रहेगा।",
+        greeting: "नमस्कार कप्तान! मैं ओर्का (ORCA), आपका एआई समुद्री सहायक हूँ।",
+        weatherSummary: "चेन्नई तट मौसम पूर्वानुमान: कल सुबह 14.2 किमी/घंटा हवाएँ रहेंगी।",
         safetySummary: "जोन A (North East Shelf) सुरक्षा मूल्यांकन: कम जोखिम (LOW RISK)।",
         cycloneSummary: "चक्रवात वरुण वर्तमान में चेन्नई से 145 किमी दूर है।",
-        routeSummary: "चेन्नई बंदरगाह से जोन A का मार्ग: दूरी 18.4 किमी, समय 52 मिनट।",
-        marineSummary: "वर्तमान समुद्री पैरामीटर: समुद्री सतह तापमान (SST) 28.2°C है।",
-        borderSummary: "समुद्री सीमा स्थिति: आपकी नाव अंतरराष्ट्रीय सीमा से 38.5 किमी दूर सुरक्षित भारतीय क्षेत्र में है (SAFE)।",
-        whySummary: "जोन A की सिफारिश अनुकूल तापमान (28.2°C) और सीमा सुरक्षा के कारण की गई है।",
-        unknownClarification: "क्षमा करें, मैं समझ नहीं पाया। क्या आप सीमा दूरी या मौसम जानना चाहते हैं?",
+        routeSummary: "चेन्नई बंदरगाह से जोन A का मार्ग: दूरी 18.4 किमी।",
+        marineSummary: "वर्तमान समुद्री पैरामीटर: समुद्री सतह तापमान 28.2°C है।",
+        borderSummary: "समुद्री सीमा स्थिति: आपकी नाव सुरक्षित भारतीय क्षेत्र में है (SAFE)।",
+        geofenceSummary: "जियोफेंस विश्लेषण: नाव वर्तमान में सुरक्षित क्षेत्र में है। नौसेना प्रतिबंधित क्षेत्र 6.4 किमी दूर है।",
+        whySummary: "जोन A की सिफारिश अनुकूल तापमान (28.2°C) के कारण की गई है।",
+        unknownClarification: "क्षमा करें, मैं समझ नहीं पाया।",
+      },
+    },
+    geofence: {
+      title: "नाव जियोफेंसिंग और क्षेत्र पहचान प्रणाली",
+      subtitle: "प्रतिबंधित नौसेना और खतरा क्षेत्रों के लिए वास्तविक समय बिंदु पहचान",
+      conceptLabel: "मत्स्य क्षेत्र → सुरक्षित मार्ग → जियोफेंसिंग एवं चेतावनियां",
+      vesselStatusTitle: "नाव सुरक्षा स्थिति (VESSEL SAFETY STATUS)",
+      prohibitedEntryTitle: "⚠ प्रतिबंधित क्षेत्र में प्रवेश (PROHIBITED ZONE ENTRY)",
+      prohibitedEntryText: "नाव प्रतिबंधित क्षेत्र में प्रवेश कर चुकी है! तुरंत वापस लौटें।",
+      hazardEntryTitle: "⚠ खतरा क्षेत्र में प्रवेश (HAZARD ZONE ENTRY)",
+      hazardEntryText: "नाव सक्रिय समुद्री खतरा क्षेत्र में है।",
+      approachingRestricted: "⚠ प्रतिबंधित क्षेत्र के करीब पहुंच रहे हैं",
+      approachingHazard: "⚠ खतरा क्षेत्र के करीब पहुंच रहे हैं",
+      unsafeRouteDetected: "⚠ असुरक्षित मार्ग का पता चला। वैकल्पिक मार्ग तैयार किया गया।",
+      alternativeRouteGenerated: "वैकल्पिक सुरक्षित मार्ग सक्रिय",
+      startSimulation: "▶ शुरू करें",
+      pauseSimulation: "⏸ रोकें",
+      resetSimulation: "↻ रीसेट",
+      simulationSpeed: "गति",
+      alertHistory: "जियोफेंस चेतावनी इतिहास",
+      clearHistory: "इतिहास मिटाएं",
+      distanceToRestricted: "प्रतिबंधित क्षेत्र की दूरी",
+      distanceToHazard: "निकटतम खतरे की दूरी",
+      types: {
+        safe: "सुरक्षित (SAFE)",
+        caution: "सावधानी (CAUTION)",
+        prohibited: "प्रतिबंधित (PROHIBITED)",
+        hazard: "खतरा (HAZARD)",
       },
     },
     border: {
@@ -734,7 +858,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ఓర్కా AI సముద్ర సహాయకుడు",
       subtitle: "ప్రశ్నల ఉద్దేశ్యాన్ని గ్రహించి ఖచ్చితమైన సముద్ర వేట సూచనలను ఇచ్చే AI",
-      inputPlaceholder: "వాతావరణం, సరిహద్దు రక్షణ, ప్రాంతాలు, మార్గం గురించి అడగండి...",
+      inputPlaceholder: "వాతావరణం, జియోఫెన్సింగ్, నిషేధిత ప్రాంతం గురించి అడగండి...",
       analyzing: "ప్రశ్న ఉద్దేశ్యాన్ని విశ్లేషిస్తోంది...",
       suggestedQuestionsTitle: "సూచించబడిన ప్రశ్నలు",
       whyRecommendation: "ఈ సిఫార్సు ఎందుకు?",
@@ -754,6 +878,8 @@ export const translations: Record<Language, TranslationSchema> = {
         q8: "నమస్కారం ఓర్కా!",
         q9: "నేను సముద్ర సరిహద్దుకు సమీపంలో ఉన్నానా?",
         q10: "జోన్ A సరిహద్దు నిబంధనల నుండి సురక్షితమేనా?",
+        q11: "నేను నిషేధిత ప్రాంతంలో ఉన్నానా?",
+        q12: "ముందు ఏదైనా ప్రమాదం ఉందా?",
       },
       intents: {
         greeting: "నమస్కారం కెప్టెన్! నేను ఓర్కా (ORCA), మీ AI సముద్ర సహాయకుడిని.",
@@ -762,9 +888,38 @@ export const translations: Record<Language, TranslationSchema> = {
         cycloneSummary: "వరుణ తుఫాను చెన్నైకి 145 కిమీ దూరంలో ఉంది.",
         routeSummary: "చెన్నై పోర్ట్ నుండి జోన్ A కు మార్గం: దూరం 18.4 కిమీ.",
         marineSummary: "ప్రస్తుత సముద్ర పారామితులు: ఉష్ణోగ్రత 28.2°C.",
-        borderSummary: "సరిహద్దు స్థితి: మీ పడవ అంతర్జాతీయ సరిహద్దు నుండి 38.5 కిమీ దూరంలో సురక్షిత ప్రాంతంలో ఉంది (SAFE).",
-        whySummary: "జోన్ A ఉష్ణోగ్రత మరియు సరిహద్దు భద్రత ఆధారంగా సిఫార్సు చేయబడింది.",
+        borderSummary: "సరిహద్దు స్థితి: మీ పడవ అంతర్జాతీయ సరిహద్దు నుండి 38.5 కిమీ దూరంలో ఉంది.",
+        geofenceSummary: "జియోఫెన్స్ విశ్లేషణ: పడవ ప్రస్తుతం సురక్షిత ప్రాంతంలో ఉంది.",
+        whySummary: "జోన్ A సిఫార్సు చేయబడింది.",
         unknownClarification: "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు.",
+      },
+    },
+    geofence: {
+      title: "పడవ జియోఫెన్సింగ్ వ్యవస్థ",
+      subtitle: "నిషేధిత ప్రాంతాలను గుర్తించే GPS వ్యవస్థ",
+      conceptLabel: "చేపల వేట ప్రాంతాలు → సురక్షిత మార్గాలు → జియోఫెన్సింగ్ & హెచ్చరికలు",
+      vesselStatusTitle: "పడవ రక్షణ స్థితి (VESSEL SAFETY STATUS)",
+      prohibitedEntryTitle: "⚠ నిషేధిత ప్రాంతంలోకి ప్రవేశించారు (PROHIBITED ZONE ENTRY)",
+      prohibitedEntryText: "పడవ నిషేధిత ప్రాంతంలోకి ప్రవేశించింది! వెంటనే వెనక్కి మళ్లండి.",
+      hazardEntryTitle: "⚠ ప్రమాదకర ప్రాంతంలోకి ప్రవేశించారు (HAZARD ZONE ENTRY)",
+      hazardEntryText: "పడవ సక్రియ ప్రమాదకర ప్రాంతంలో ఉంది.",
+      approachingRestricted: "⚠ నిషేధిత ప్రాంతానికి సమీపిస్తున్నారు",
+      approachingHazard: "⚠ ప్రమాదకర ప్రాంతానికి సమీపిస్తున్నారు",
+      unsafeRouteDetected: "⚠ సురక్షితం కాని మార్గం గుర్తించబడింది. ప్రత్యామ్నాయ మార్గం సృష్టించబడింది.",
+      alternativeRouteGenerated: "ప్రత్యామ్నాయ సురక్షిత మార్గం సక్రియంగా ఉంది",
+      startSimulation: "▶ ప్రారంభించు",
+      pauseSimulation: "⏸ ఆపు",
+      resetSimulation: "↻ రీసెట్",
+      simulationSpeed: "వేగం",
+      alertHistory: "జియోఫెన్స్ హెచ్చరికల చరిత్ర",
+      clearHistory: "చరిత్రను తొలగించు",
+      distanceToRestricted: "నిషేధిత ప్రాంతానికి దూరం",
+      distanceToHazard: "ప్రమాదకర ప్రాంతానికి దూరం",
+      types: {
+        safe: "సురక్షితం (SAFE)",
+        caution: "జాగ్రత్త (CAUTION)",
+        prohibited: "నిషేధించబడింది (PROHIBITED)",
+        hazard: "ప్రమాదకరం (HAZARD)",
       },
     },
     border: {
@@ -772,7 +927,7 @@ export const translations: Record<Language, TranslationSchema> = {
       subtitle: "అంతర్జాతీయ సముద్ర సరిహద్దు (IMBL) అవగాహన వ్యవస్థ",
       borderSafety: "సరిహద్దు భద్రతా రేటింగ్",
       proximityAlertTitle: "⚠ సరిహద్దు హెచ్చరిక (BORDER PROXIMITY ALERT)",
-      proximityAlertText: "మీరు సముద్ర సరిహద్దుకు దగ్గరగా ఉన్నారు. సురక్షిత దూరం పాటించండి.",
+      proximityAlertText: "మీరు సముద్ర సరిஹద్దుకు దగ్గరగా ఉన్నారు. సురక్షిత దూరం పాటించండి.",
       zoneRestrictedTitle: "⚠ ప్రాంతం నిషేధించబడింది (RESTRICTED)",
       zoneRestrictedText: "ఈ ప్రాంతం నావికాదళ నిషేధిత ప్రాంతం పరిధిలో ఉన్నందున మినహాయించబడింది.",
       disclaimer: "నమూనా డేటా — ఇది అధికారిక నావిగేషన్ సాధనం కాదు",
@@ -807,7 +962,7 @@ export const translations: Record<Language, TranslationSchema> = {
       subtitle: "క్లోరోఫిల్ మరియు సముద్ర ఉష్ణోగ్రత ఆధారిత వేట ప్రాంతాలు",
       suitabilityScore: "చేపల వేట అనుకూలత",
       chlorophyll: "క్లోరోఫిల్ సూచిక",
-      tempGradient: "ఉష్ணోగ్రత మార్పు (SST)",
+      tempGradient: "ఉష్ణోగ్రత మార్పు (SST)",
       oceanCurrent: "సముద్ర ప్రవాహ వేగం",
       historicalSuitability: "చారిత్రక చేపల దిగుబడి",
       weatherFactor: "స్థానిక వాతావరణం",
@@ -837,7 +992,7 @@ export const translations: Record<Language, TranslationSchema> = {
       hazardAlert: "రక్షణ వలయంలో ప్రమాదం గుర్తించబడింది!",
     },
     mission: {
-      title: "48-గంటల మిషన్ ప్యాకేజీ & ఆఫ్‌లైన్ మోడ్",
+      title: "48-గంటల மிஷன் ప్యాకేజీ & ఆఫ్‌లైన్ మోడ్",
       status: "ప్యాకేజీ స్థితి",
       validity: "చెల్లుబాటు కాలం",
       ready: "సిద్ధంగా ఉంది (ఆఫ్‌లైన్ క్యాష్ అప్‌డేట్ అయింది)",

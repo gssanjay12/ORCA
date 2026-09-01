@@ -21,29 +21,32 @@ import {
   Compass,
   Shield,
   Info,
+  MapPin,
 } from 'lucide-react';
 
 interface AIAssistantViewProps {
   currentLang: Language;
   initialQuery?: string;
   isOffline: boolean;
+  vesselPos?: [number, number];
 }
 
 export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
   currentLang,
   initialQuery,
   isOffline,
+  vesselPos = [13.0827, 80.2707],
 }) => {
   const t = translations[currentLang];
 
   const defaultUserQuery =
     currentLang === 'ta'
-      ? 'நாளை காலை மீன்பிடிக்க எந்த இடத்திற்கு செல்லலாம்?'
+      ? 'நான் தடைசெய்யப்பட்ட மண்டலத்தில் உள்ளேனா?'
       : currentLang === 'hi'
-      ? 'कल सुबह मुझे मछली पकड़ने कहाँ जाना चाहिए?'
+      ? 'क्या मैं वर्तमान में प्रतिबंधित क्षेत्र में हूँ?'
       : currentLang === 'te'
-      ? 'రేపు ఉదయం నేను చేపల వేటకు ఎక్కడికి వెళ్ళాలి?'
-      : 'Where should I fish tomorrow morning?';
+      ? 'నేను నిషేధిత ప్రాంతంలో ఉన్నానా?'
+      : 'Am I currently in a prohibited zone?';
 
   const [inputQuery, setInputQuery] = useState(initialQuery || defaultUserQuery);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -55,7 +58,8 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
       defaultUserQuery,
       currentLang,
       isOffline,
-      []
+      [],
+      vesselPos
     );
     return [
       {
@@ -79,7 +83,8 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
       defaultUserQuery,
       currentLang,
       isOffline,
-      []
+      [],
+      vesselPos
     );
     setMessages([
       {
@@ -120,7 +125,8 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
           q,
           currentLang,
           isOffline,
-          currentMessages
+          currentMessages,
+          vesselPos
         );
 
         const botMsgId = `orca-${Date.now()}`;
@@ -142,14 +148,13 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
   };
 
   const suggestedQuestions = [
+    t.ai.questions.q11,
+    t.ai.questions.q12,
     t.ai.questions.q1,
-    t.ai.questions.q2,
     t.ai.questions.q9,
     t.ai.questions.q4,
     t.ai.questions.q5,
     t.ai.questions.q6,
-    t.ai.questions.q7,
-    t.ai.questions.q8,
   ];
 
   return (
@@ -175,7 +180,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
 
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-800">
           <Zap className="w-4 h-4 text-cyan-400" />
-          <span>Multi-Intent & Border Protection AI Active</span>
+          <span>Geofence & Multi-Intent Conversational AI Active</span>
         </div>
       </div>
 
@@ -254,7 +259,41 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
 
                 {/* DYNAMIC INTENT CARDS RENDERING */}
 
-                {/* 1. BORDER PROTECTION INTENT CARD */}
+                {/* 1. GEOFENCE INTENT CARD */}
+                {rec.intent === 'GEOFENCE' && rec.geofenceData && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
+                    <div className="flex items-center justify-between font-bold text-slate-200">
+                      <span className="flex items-center gap-2 text-cyan-300">
+                        <MapPin className="w-4 h-4 text-cyan-400" />
+                        <span>Current Sector: <strong>{rec.geofenceData.currentZoneName}</strong></span>
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 text-[10px] font-black rounded uppercase ${
+                          rec.geofenceData.currentZoneType === 'SAFE'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : rec.geofenceData.currentZoneType === 'CAUTION'
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : 'bg-red-500/30 text-red-300 animate-pulse'
+                        }`}
+                      >
+                        {rec.geofenceData.currentZoneType}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-slate-300">
+                      <div className="p-2.5 rounded-lg bg-slate-950 border border-amber-500/40">
+                        <span className="text-slate-400 text-[11px] block">{t.geofence.distanceToRestricted}</span>
+                        <strong className="text-amber-400 text-xs font-mono">{rec.geofenceData.distanceToRestrictedKm} km</strong>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950 border border-orange-500/40">
+                        <span className="text-slate-400 text-[11px] block">{t.geofence.distanceToHazard}</span>
+                        <strong className="text-orange-400 text-xs font-mono">{rec.geofenceData.distanceToHazardKm} km</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. BORDER PROTECTION INTENT CARD */}
                 {rec.intent === 'BORDER' && rec.borderData && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
                     <div className="flex items-center justify-between font-bold text-slate-200">
@@ -283,7 +322,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 2. GREETING CARD */}
+                {/* 3. GREETING CARD */}
                 {rec.intent === 'GREETING' && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3">
                     <span className="text-xs font-bold text-slate-300">Suggested Quick Actions:</span>
@@ -296,11 +335,11 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         <span>Find Best Fishing Zone</span>
                       </button>
                       <button
-                        onClick={() => handleSend(t.ai.questions.q9)}
+                        onClick={() => handleSend(t.ai.questions.q11)}
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
                       >
                         <Shield className="w-3.5 h-3.5" />
-                        <span>Check Border Distance</span>
+                        <span>Check Geofence Status</span>
                       </button>
                       <button
                         onClick={() => handleSend(t.ai.questions.q3)}
@@ -313,7 +352,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 3. WEATHER CARD */}
+                {/* 4. WEATHER CARD */}
                 {rec.intent === 'WEATHER' && rec.weatherData && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-sky-500/30 text-xs">
                     <div className="p-2.5 rounded-lg bg-slate-950">
@@ -335,7 +374,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 4. SAFETY CARD */}
+                {/* 5. SAFETY CARD */}
                 {rec.intent === 'SAFETY' && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-3">
                     <div className="flex items-center justify-between">
@@ -357,7 +396,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 5. CYCLONE CARD */}
+                {/* 6. CYCLONE CARD */}
                 {rec.intent === 'CYCLONE' && rec.cycloneData && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-red-500/40 space-y-2 text-xs">
                     <div className="flex items-center justify-between text-red-400 font-bold">
@@ -378,7 +417,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 6. ROUTE CARD */}
+                {/* 7. ROUTE CARD */}
                 {rec.intent === 'ROUTE' && rec.routeData && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
                     <div className="flex items-center justify-between font-bold text-cyan-300">
@@ -397,28 +436,6 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         <span className="text-slate-400 text-[11px] block">Est. Travel Time</span>
                         <strong className="text-slate-200 text-sm">{rec.routeData.travelTimeMin} min</strong>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 7. MARINE CONDITIONS CARD */}
-                {rec.intent === 'MARINE_CONDITIONS' && rec.marineData && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-teal-500/30 text-xs">
-                    <div className="p-2.5 rounded-lg bg-slate-950">
-                      <span className="text-slate-400 block text-[11px]">SST</span>
-                      <strong className="text-cyan-300 text-sm">{rec.marineData.sst} °C</strong>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950">
-                      <span className="text-slate-400 block text-[11px]">Chlorophyll</span>
-                      <strong className="text-emerald-400 text-sm">{rec.marineData.chlorophyllIndex}%</strong>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950">
-                      <span className="text-slate-400 block text-[11px]">Current Speed</span>
-                      <strong className="text-slate-200 text-sm">{rec.marineData.currentSpeed} kn</strong>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950">
-                      <span className="text-slate-400 block text-[11px]">Sea Visibility</span>
-                      <strong className="text-slate-200 text-sm">{rec.marineData.visibilityKm} km</strong>
                     </div>
                   </div>
                 )}
