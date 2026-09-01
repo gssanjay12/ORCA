@@ -1,6 +1,6 @@
 import React from 'react';
 import { translations, type Language } from '../i18n/translations';
-import { CYCLONE_VARUNA, COASTAL_LOCATIONS } from '../data/mockMarineData';
+import { CYCLONE_VARUNA, COASTAL_LOCATIONS, MARITIME_BOUNDARIES } from '../data/mockMarineData';
 import { MarineMap } from './MarineMap';
 import {
   ShieldAlert,
@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Radio,
   Sliders,
+  Shield,
+  Info,
 } from 'lucide-react';
 
 interface SafetyViewProps {
@@ -29,8 +31,8 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
   const t = translations[currentLang];
   const chennai = COASTAL_LOCATIONS[0];
 
-  // Detect if cyclone intersects safety bubble radius
-  const isHazardIntersecting = CYCLONE_VARUNA.distanceFromCoastKm <= safetyBubbleRadiusKm + CYCLONE_VARUNA.dangerRadiusKm;
+  const isHazardIntersecting =
+    CYCLONE_VARUNA.distanceFromCoastKm <= safetyBubbleRadiusKm + CYCLONE_VARUNA.dangerRadiusKm;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -39,10 +41,10 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
         <div>
           <h2 className="text-xl font-black text-slate-100 flex items-center gap-2">
             <ShieldAlert className="w-6 h-6 text-amber-400" />
-            <span>{t.safety.title}</span>
+            <span>{t.safety.title} & {t.border.title}</span>
           </h2>
           <p className="text-xs text-slate-300 mt-1">
-            Real-time Coast Guard & IMD Cyclone Telemetry Alerting Engine
+            Real-time Coast Guard Telemetry, IMBL Proximity Alerting & Cyclone Radar
           </p>
         </div>
 
@@ -62,6 +64,77 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* MARITIME BORDER PROTECTION CARD */}
+      <div className="p-6 rounded-2xl glass-panel-accent border-cyan-500/30 space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-cyan-500/20">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+              <Shield className="w-6 h-6" />
+            </span>
+            <div>
+              <h3 className="text-base font-black text-slate-100">{t.border.title}</h3>
+              <p className="text-xs text-cyan-300">{t.border.subtitle}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 text-xs font-black bg-emerald-500 text-slate-950 rounded-full shadow">
+              {t.border.states.safe} ({MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km to IMBL)
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Alert State Badges */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* SAFE STATE */}
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-1">
+            <div className="flex items-center justify-between font-extrabold text-emerald-400">
+              <span>🟢 {t.border.states.safe}</span>
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <p className="text-slate-300 text-[11px]">Far from boundary lines & prohibited defense areas.</p>
+          </div>
+
+          {/* CAUTION STATE */}
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-xs space-y-1">
+            <div className="flex items-center justify-between font-extrabold text-amber-400">
+              <span>🟡 {t.border.states.caution}</span>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <p className="text-slate-300 text-[11px]">Approaching within 15 km of International Boundary.</p>
+          </div>
+
+          {/* RESTRICTED STATE */}
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/40 text-xs space-y-1">
+            <div className="flex items-center justify-between font-extrabold text-red-400">
+              <span>🔴 {t.border.states.restricted}</span>
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <p className="text-slate-300 text-[11px]">Overlaps naval prohibited zone or crosses IMBL line.</p>
+          </div>
+        </div>
+
+        {/* Proximity Alert Banner Text */}
+        <div className="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 text-xs space-y-1.5 text-slate-200">
+          <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span>{t.border.proximityAlertTitle}</span>
+          </div>
+          <p className="text-slate-300">{t.border.proximityAlertText}</p>
+
+          {currentLang === 'ta' && (
+            <p className="text-cyan-300 font-semibold pt-1">
+              "எல்லைப் பகுதியை நெருங்குகிறீர்கள். பாதுகாப்பான தூரத்தைப் பராமரிக்கவும்."
+            </p>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-2 border-t border-slate-800">
+            <Info className="w-3.5 h-3.5 text-slate-500" />
+            <span>{t.border.disclaimer}</span>
+          </div>
+        </div>
+      </div>
 
       {/* Risk Matrix Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -159,9 +232,8 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
         </div>
       </div>
 
-      {/* Personal Safety Bubble Configurator & Cyclone Details */}
+      {/* Personal Safety Bubble Configurator */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Personal Safety Bubble Radius Configurator */}
         <div className="p-6 rounded-2xl glass-panel border-cyan-500/30 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -224,10 +296,10 @@ export const SafetyView: React.FC<SafetyViewProps> = ({
         </div>
       </div>
 
-      {/* Map displaying Safety Bubble & Cyclone Danger Perimeter */}
+      {/* Map displaying Safety Bubble & Maritime Boundaries */}
       <div className="space-y-2">
         <h3 className="text-sm font-bold text-slate-200">
-          Spatial Hazard Map — Safety Radius ({safetyBubbleRadiusKm} km) & Cyclone Track
+          Spatial Hazard Map — IMBL Border Lines, Restricted Zones & Safety Radius
         </h3>
         <MarineMap
           currentLang={currentLang}

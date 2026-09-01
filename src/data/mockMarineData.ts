@@ -8,6 +8,7 @@ export type IntentType =
   | 'CYCLONE'
   | 'MARINE_CONDITIONS'
   | 'ROUTE'
+  | 'BORDER'
   | 'FISHING_ZONE'
   | 'FISHING_RECOMMENDATION'
   | 'WHY_EXPLANATION'
@@ -41,7 +42,10 @@ export interface FishingZone {
   distanceKm: number;
   travelTimeMin: number;
   riskLevel: 'low' | 'moderate' | 'high';
+  borderSafety: 'safe' | 'caution' | 'restricted';
+  borderDistanceKm: number;
   isRecommended?: boolean;
+  isRestrictedExcluded?: boolean;
   factors: {
     sst: number;
     chlorophyll: number;
@@ -74,6 +78,19 @@ export interface CycloneData {
   status: string;
 }
 
+export interface MaritimeBoundaryDataset {
+  imblPolyline: Array<[number, number]>;
+  territorialLimitPolyline: Array<[number, number]>;
+  restrictedNavalZone: {
+    name: string;
+    lat: number;
+    lng: number;
+    radiusKm: number;
+  };
+  vesselDistanceToIMBLKm: number;
+  vesselBorderStatus: 'safe' | 'caution' | 'restricted';
+}
+
 export interface DynamicAIResponse {
   intent: IntentType;
   summary: string;
@@ -81,6 +98,7 @@ export interface DynamicAIResponse {
   recommendedZone?: string;
   suitabilityScore?: number;
   safetyRisk?: string;
+  borderSafety?: 'safe' | 'caution' | 'restricted';
   distanceKm?: number;
   travelTimeMin?: number;
   bestTime?: string;
@@ -112,6 +130,12 @@ export interface DynamicAIResponse {
     chlorophyllIndex: number;
     currentSpeed: number;
     visibilityKm: number;
+  };
+  borderData?: {
+    status: 'safe' | 'caution' | 'restricted';
+    distanceToIMBLKm: number;
+    nearestSafeZone: string;
+    restrictedZoneName: string;
   };
 }
 
@@ -201,6 +225,8 @@ export const FISHING_ZONES: FishingZone[] = [
     distanceKm: 18.4,
     travelTimeMin: 52,
     riskLevel: 'low',
+    borderSafety: 'safe',
+    borderDistanceKm: 38.5,
     isRecommended: true,
     bestTimeWindow: '06:00 – 11:00 AM',
     factors: {
@@ -221,6 +247,8 @@ export const FISHING_ZONES: FishingZone[] = [
     distanceKm: 12.1,
     travelTimeMin: 35,
     riskLevel: 'moderate',
+    borderSafety: 'safe',
+    borderDistanceKm: 24.2,
     isRecommended: false,
     bestTimeWindow: '07:00 – 10:30 AM',
     factors: {
@@ -241,6 +269,8 @@ export const FISHING_ZONES: FishingZone[] = [
     distanceKm: 31.5,
     travelTimeMin: 88,
     riskLevel: 'moderate',
+    borderSafety: 'caution',
+    borderDistanceKm: 14.1,
     isRecommended: false,
     bestTimeWindow: '05:30 – 08:30 AM',
     factors: {
@@ -253,7 +283,7 @@ export const FISHING_ZONES: FishingZone[] = [
   },
   {
     id: 'zone-d',
-    name: 'Zone D — Pulicat Outer Channel',
+    name: 'Zone D — Pulicat Outer Channel (Restricted Sector)',
     lat: 13.4000,
     lng: 80.5200,
     suitabilityScore: 29,
@@ -261,14 +291,17 @@ export const FISHING_ZONES: FishingZone[] = [
     distanceKm: 44.8,
     travelTimeMin: 120,
     riskLevel: 'high',
+    borderSafety: 'restricted',
+    borderDistanceKm: 2.8,
     isRecommended: false,
-    bestTimeWindow: 'Not Recommended',
+    isRestrictedExcluded: true,
+    bestTimeWindow: 'RESTRICTED / NOT RECOMMENDED',
     factors: {
       sst: 30,
       chlorophyll: 25,
       current: 28,
       weather: 40,
-      safety: 35,
+      safety: 15,
     },
   },
 ];
@@ -309,6 +342,30 @@ export const CYCLONE_VARUNA: CycloneData = {
   status: 'Moving North-East away from Chennai Harbor. Low direct landfall risk.',
 };
 
+export const MARITIME_BOUNDARIES: MaritimeBoundaryDataset = {
+  imblPolyline: [
+    [12.0, 81.5],
+    [12.5, 81.2],
+    [13.0, 80.9],
+    [13.6, 80.7],
+    [14.0, 80.5],
+  ],
+  territorialLimitPolyline: [
+    [12.2, 80.7],
+    [12.7, 80.5],
+    [13.2, 80.4],
+    [13.8, 80.3],
+  ],
+  restrictedNavalZone: {
+    name: 'Pulicat Naval Prohibited Defense Zone',
+    lat: 13.4000,
+    lng: 80.5200,
+    radiusKm: 12,
+  },
+  vesselDistanceToIMBLKm: 38.5,
+  vesselBorderStatus: 'safe',
+};
+
 /**
  * Detect Intent and resolve multi-turn conversation context
  */
@@ -318,11 +375,20 @@ export function detectIntentAndContext(
 ): { intent: IntentType; resolvedContext?: string } {
   const q = query.toLowerCase().trim();
 
-  // Check for greetings first
+  // Check for greetings
   if (
-    /^(hi|hello|vanakkam|வணக்கம்|नमस्ते|நமస్కారం|hey|greetings|good morning)/i.test(q)
+    /^(hi|hello|vanakkam|வணக்கம்|नमस्ते|நமస్కாரம்|hey|greetings|good morning)/i.test(q)
   ) {
     return { intent: 'GREETING' };
+  }
+
+  // Check for Border / Maritime Boundary Intent
+  if (
+    /border|boundary|imbl|restricted|territorial|எல்லை|எல்லைக்கோட்டிலிருந்து|सीमा|సరిஹద్దు|prohibited/i.test(
+      q
+    )
+  ) {
+    return { intent: 'BORDER', resolvedContext: 'IMBL Boundary & Defense Zone Check' };
   }
 
   // Check for "Why" / Explanation Intent
@@ -353,7 +419,6 @@ export function detectIntentAndContext(
 
   // Check for Safety Intent
   if (/safe|safety|risk|hazard|பாதுகாப்பானதா|பாதுகாப்பு|அபாயம்|surakshit|badram/i.test(q)) {
-    // Check if context has prior fishing recommendation
     const hasPriorZoneRec = history.some((m) => m.recommendation?.recommendedZone);
     const resolved = hasPriorZoneRec ? 'Referring to Zone A (North East Shelf)' : undefined;
     return { intent: 'SAFETY', resolvedContext: resolved };
@@ -368,7 +433,7 @@ export function detectIntentAndContext(
     return { intent: 'MARINE_CONDITIONS', resolvedContext: 'ISRO Ocean Color & Satellite Telemetry' };
   }
 
-  // Check for Fishing Zone / Specific Zone Intent
+  // Check for Fishing Zone Intent
   if (
     /fishing zone|best zone|where to fish|எங்கு மீன்பிடிக்க|மீன்பிடி மண்டலம்|machli/i.test(
       q
@@ -440,6 +505,20 @@ export function generateDynamicAIResponse(
         summary: `${prefix}${t.greeting}`,
       };
 
+    case 'BORDER':
+      return {
+        intent: 'BORDER',
+        summary: `${prefix}${t.borderSummary}`,
+        contextResolved: resolvedContext,
+        borderSafety: 'safe',
+        borderData: {
+          status: 'safe',
+          distanceToIMBLKm: MARITIME_BOUNDARIES.vesselDistanceToIMBLKm,
+          nearestSafeZone: 'Zone A — North East Shelf',
+          restrictedZoneName: MARITIME_BOUNDARIES.restrictedNavalZone.name,
+        },
+      };
+
     case 'WEATHER':
       return {
         intent: 'WEATHER',
@@ -460,10 +539,14 @@ export function generateDynamicAIResponse(
         summary: `${prefix}${t.safetySummary}`,
         contextResolved: resolvedContext || 'Zone A (North East Shelf)',
         safetyRisk: lang === 'ta' ? 'குறைந்த அபாயம் (LOW)' : 'LOW RISK',
+        borderSafety: 'safe',
         reasons: [
           lang === 'ta'
             ? 'காற்றின் வேகம் (14.2 km/h) மற்றும் அலைகள் (1.1m) பாதுகாப்பான வரம்பில் உள்ளன.'
             : 'Wind speed (14.2 km/h) and wave height (1.1m) remain safe until 14:00.',
+          lang === 'ta'
+            ? 'உங்கள் படகு சர்வதேச எல்லைக்கோட்டிலிருந்து 38.5 கி.மீ பாதுகாப்பான தூரத்தில் உள்ளது.'
+            : 'Vessel is 38.5 km safely inside international maritime boundary limits.',
           lang === 'ta'
             ? 'வருணா புயல் மண்டலம் A-விலிருந்து 82 கி.மீ தொலைவில் வடகிழக்காகச் செல்கிறது.'
             : 'Cyclone VARUNA is moving North-East away from Zone A with 82km margin.',
@@ -530,6 +613,7 @@ export function generateDynamicAIResponse(
         recommendedZone: 'Zone A — North East Shelf',
         suitabilityScore: 87,
         safetyRisk: lang === 'ta' ? 'குறைந்த அபாயம் (LOW)' : 'LOW RISK',
+        borderSafety: 'safe',
         distanceKm: 18.4,
         travelTimeMin: 52,
         bestTime: '06:00 – 11:00 AM',
@@ -540,6 +624,9 @@ export function generateDynamicAIResponse(
           lang === 'ta'
             ? 'குளோரோபில் செறிவு (88%) அதிக அளவிலான இரையை (Plankton) குறிக்கிறது.'
             : 'High Chlorophyll concentration (88%) indicates rich feeding zones.',
+          lang === 'ta'
+            ? 'எல்லைப் பாதுகாப்பு மதிப்பீடு: பாதுகாப்பானது (SAFE - 38.5 km from IMBL).'
+            : 'Border Safety: SAFE (38.5 km from IMBL line).',
           lang === 'ta'
             ? 'காலை 06:00 - 11:00 மணி வரை அலை மற்றும் காற்று பாதுகாப்பான எல்லைக்குள் உள்ளது.'
             : 'Optimal weather window from 06:00 to 11:00 AM with gentle winds.',

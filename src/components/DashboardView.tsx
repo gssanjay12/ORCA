@@ -4,6 +4,7 @@ import {
   COASTAL_LOCATIONS,
   FISHING_ZONES,
   CYCLONE_VARUNA,
+  MARITIME_BOUNDARIES,
   type FishingZone,
 } from '../data/mockMarineData';
 import { MarineMap } from './MarineMap';
@@ -20,6 +21,7 @@ import {
   Navigation,
   Clock,
   ExternalLink,
+  Shield,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -113,14 +115,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="text-[10px] text-emerald-400 font-medium">ISRO Satellite Data</div>
         </div>
 
-        {/* Ocean Current */}
+        {/* Border Safety Metric Card */}
         <div className="p-4 rounded-xl glass-panel border-cyan-500/20 space-y-1 hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-            <span>{t.dashboard.current}</span>
-            <Compass className="w-4 h-4 text-teal-400" />
+            <span>{t.border.borderSafety}</span>
+            <Shield className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-xl font-black text-slate-100">{chennai.currentSpeed} kn</div>
-          <div className="text-[10px] text-cyan-300 font-medium">SW Drift</div>
+          <div className="text-xl font-black text-emerald-400 uppercase">{t.border.states.safe}</div>
+          <div className="text-[10px] text-slate-300 font-medium">IMBL: {MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km away</div>
         </div>
 
         {/* Weather Condition */}
@@ -156,7 +158,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Key Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
             <div>
               <span className="text-slate-400 text-[11px] block">{t.dashboard.confidence}</span>
               <strong className="text-cyan-300 font-mono text-sm">{recommendedZone.confidence}%</strong>
@@ -168,6 +170,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div>
               <span className="text-slate-400 text-[11px] block">{t.dashboard.travelTime}</span>
               <strong className="text-slate-200 font-mono text-sm">{recommendedZone.travelTimeMin} min</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 text-[11px] block">{t.border.borderSafety}</span>
+              <strong className="text-emerald-400 font-bold uppercase">{recommendedZone.borderSafety}</strong>
             </div>
             <div>
               <span className="text-slate-400 text-[11px] block">{t.dashboard.safetyRisk}</span>
@@ -183,13 +189,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onNavigateToZone(recommendedZone)}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all cursor-pointer"
               >
                 Inspect Zone Breakdown
               </button>
               <button
                 onClick={() => onNavigateToAI(t.ai.questions.q5)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-all shadow"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-all shadow cursor-pointer"
               >
                 <span>{t.ai.whyRecommendation}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -213,16 +219,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2 text-xs">
+            {/* Border Proximity Banner */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-300">
+              <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                <Shield className="w-4 h-4 text-emerald-400" />
+                <span>Maritime Border Status: {t.border.states.safe}</span>
+              </div>
+              Vessel position is {MARITIME_BOUNDARIES.vesselDistanceToIMBLKm} km inside Indian territorial waters.
+            </div>
+
             <div className="p-3 rounded-xl bg-slate-900/80 border border-amber-500/30 text-amber-200 leading-relaxed">
               <strong className="block text-amber-400 font-bold mb-0.5">
                 {CYCLONE_VARUNA.name} Alert
               </strong>
-              {CYCLONE_VARUNA.distanceFromCoastKm} km East-Southeast of Chennai. Moving North-East at 85 km/h. No direct threat to Zone A operating window.
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300">
-              <span className="text-slate-400 block text-[11px]">{t.dashboard.waveAlert}</span>
-              Swell height under 1.4m until 14:00. Wind expected to pick up after 15:00.
+              {CYCLONE_VARUNA.distanceFromCoastKm} km East-Southeast of Chennai. Moving North-East at 85 km/h. No threat to Zone A.
             </div>
           </div>
         </div>
@@ -233,10 +243,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex items-center justify-between px-1">
           <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
             <Navigation className="w-4 h-4 text-cyan-400" />
-            <span>Interactive Marine Intelligence Map</span>
+            <span>Interactive Marine Intelligence & Maritime Boundary Map</span>
           </h3>
           <span className="text-xs text-slate-400 font-mono">
-            Showing Recommended Zone A, Route & 20km Safety Radius
+            Showing IMBL Boundary Line, Defense Sector & Recommended Zone A
           </span>
         </div>
 

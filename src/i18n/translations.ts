@@ -58,6 +58,8 @@ export interface TranslationSchema {
       q6: string;
       q7: string;
       q8: string;
+      q9: string;
+      q10: string;
     };
     intents: {
       greeting: string;
@@ -66,8 +68,30 @@ export interface TranslationSchema {
       cycloneSummary: string;
       routeSummary: string;
       marineSummary: string;
+      borderSummary: string;
       whySummary: string;
       unknownClarification: string;
+    };
+  };
+  border: {
+    title: string;
+    subtitle: string;
+    borderSafety: string;
+    proximityAlertTitle: string;
+    proximityAlertText: string;
+    zoneRestrictedTitle: string;
+    zoneRestrictedText: string;
+    disclaimer: string;
+    distanceToIMBL: string;
+    states: {
+      safe: string;
+      caution: string;
+      restricted: string;
+    };
+    layers: {
+      imbl: string;
+      territorial: string;
+      restrictedZone: string;
     };
   };
   weather: {
@@ -191,8 +215,8 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ORCA AI Marine Assistant",
       subtitle: "Context-Aware Dynamic Conversational AI for Marine Navigation & Fishing",
-      inputPlaceholder: "Ask about weather, safety, route to zone, cyclone, or fishing zones...",
-      analyzing: "Detecting intent & processing marine context...",
+      inputPlaceholder: "Ask about weather, border proximity, safe zones, route, or cyclone...",
+      analyzing: "Detecting intent & processing marine telemetry...",
       suggestedQuestionsTitle: "Suggested Questions",
       whyRecommendation: "Why this recommendation?",
       keyReasons: "Key Ocean & Weather Factors",
@@ -209,16 +233,40 @@ export const translations: Record<Language, TranslationSchema> = {
         q6: "Where is the cyclone currently located?",
         q7: "What are the marine conditions (SST & Chlorophyll)?",
         q8: "Vanakkam ORCA!",
+        q9: "Am I close to the maritime border?",
+        q10: "Is Zone A safe from border restrictions?",
       },
       intents: {
         greeting: "Greetings Captain! I am ORCA, your AI Marine Assistant. How can I assist your voyage today?",
         weatherSummary: "Weather Forecast for Chennai Coast: Clear skies tomorrow morning with 14.2 km/h NE winds and 1.1m wave swell. Favorable fishing window from 06:00 to 11:00 AM.",
-        safetySummary: "Safety Risk Assessment for Zone A (North East Shelf): LOW RISK. Wind and swell conditions remain well within safe operating limits.",
+        safetySummary: "Safety Risk Assessment for Zone A (North East Shelf): LOW RISK. Wind, swell, and border distance remain well within safe operating limits.",
         cycloneSummary: "Cyclonic Storm VARUNA is currently 145 km East-Southeast of Chennai moving North-East. No direct threat to Zone A.",
         routeSummary: "Optimal Route from Chennai Harbor to Zone A (North East Shelf): Distance 18.4 km, estimated travel duration 52 minutes. Route Safety: LOW RISK.",
         marineSummary: "Current Marine Parameters: Sea Surface Temperature (SST) is 28.2°C, Chlorophyll index is 88%, Current velocity is 0.8 knots SW.",
-        whySummary: "Zone A is recommended due to optimal Sea Surface Temperature (28.2°C), high chlorophyll concentration (88%), gentle swell (1.1m), and safe distance from Cyclone VARUNA.",
-        unknownClarification: "I didn't quite understand that. Would you like to check tomorrow's weather, safe fishing zones, cyclone status, or route navigation?",
+        borderSummary: "Maritime Border Status: Your vessel is 38.5 km inside domestic Indian territorial waters (SAFE). Zone A is fully compliant with maritime boundary regulations.",
+        whySummary: "Zone A is recommended due to optimal Sea Surface Temperature (28.2°C), high chlorophyll concentration (88%), gentle swell (1.1m), and safe distance from International Maritime Boundaries.",
+        unknownClarification: "I didn't quite understand that. Would you like to check tomorrow's weather, safe fishing zones, border proximity, or route navigation?",
+      },
+    },
+    border: {
+      title: "Maritime Boundary & Border Awareness",
+      subtitle: "Decision Support System for IMBL & Restricted Defense Sectors",
+      borderSafety: "Border Safety Rating",
+      proximityAlertTitle: "⚠ BORDER PROXIMITY ALERT",
+      proximityAlertText: "Your current vessel location is approaching a maritime boundary. Maintain a safe distance and verify permitted fishing sectors.",
+      zoneRestrictedTitle: "⚠ ZONE NOT RECOMMENDED / RESTRICTED",
+      zoneRestrictedText: "This location has been excluded from recommendations because it is within a restricted naval defense area or border-sensitive sector.",
+      disclaimer: "Simulated Decision Support Data — Not an Official Legal Navigation Instrument",
+      distanceToIMBL: "Distance to IMBL Line",
+      states: {
+        safe: "SAFE",
+        caution: "CAUTION",
+        restricted: "RESTRICTED / EXCLUDED",
+      },
+      layers: {
+        imbl: "International Maritime Boundary Line (IMBL)",
+        territorial: "Territorial Waters Buffer (12 nm)",
+        restrictedZone: "Naval Prohibited Defense Zone",
       },
     },
     weather: {
@@ -340,7 +388,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ஆர்கா AI கடல் உதவியாளர்",
       subtitle: "கேள்விகளின் நோக்கத்தை உணர்ந்து துல்லியமான கடல் மற்றும் பாதுகாப்பு வழிகாட்டுதலை அளிக்கும் AI",
-      inputPlaceholder: "வானிலை, பாதுகாப்பு, பாதை அல்லது மீன்பிடி மண்டலங்கள் பற்றிக் கேளுங்கள்...",
+      inputPlaceholder: "வானிலை, எல்லைப் பாதுகாப்பு, மண்டலங்கள், பாதை அல்லது புயல் பற்றிக் கேளுங்கள்...",
       analyzing: "கேள்வியின் நோக்கத்தை பகுப்பாய்வு செய்து தரவுகளை பெறுகிறது...",
       suggestedQuestionsTitle: "பரிந்துரைக்கப்பட்ட கேள்விகள்",
       whyRecommendation: "இந்த பரிந்துரை ஏன்?",
@@ -358,16 +406,40 @@ export const translations: Record<Language, TranslationSchema> = {
         q6: "புயல் தற்போது எங்கே உள்ளது?",
         q7: "கடல் நிலைமைகள் (SST & குளோரோபில்) எப்படி உள்ளது?",
         q8: "வணக்கம் ஆர்கா!",
+        q9: "நான் சர்வதேச எல்லைக்கு அருகில் உள்ளேனா?",
+        q10: "மண்டலம் A எல்லையில் இருந்து பாதுகாப்பானதா?",
       },
       intents: {
         greeting: "வணக்கம் கேப்டன்! நான் ஆர்கா (ORCA), உங்கள் AI கடல் உதவியாளர். உங்கள் இன்றைய கடல் பயணத்திற்கு நான் எவ்வாறு உதவட்டும்?",
-        weatherSummary: "சென்னை கடற்கரை வானிலை கணிப்பு: நாளை காலை தெளிவான வானிலை, 14.2 km/h வடகிழக்கு காற்று மற்றும் 1.1m அலை உயரம் இருக்கும். காலை 06:00 முதல் 11:00 மணி வரை உகந்த நேரம்.",
-        safetySummary: "மண்டலம் A (North East Shelf) பாதுகாப்பு அபாய மதிப்பீடு: குறைந்த அபாயம் (LOW RISK). காற்று மற்றும் அலைகள் பாதுகாப்பான எல்லைக்குள் உள்ளன.",
-        cycloneSummary: "வருணா புயல் தற்போது சென்னைக்கு கிழக்கு-தென்கிழக்கே 145 கி.மீ தொலைவில் வடகிழக்கு நோக்கி நகர்கிறது. மண்டலம் A-விற்கு எவ்வித நேரடி ஆபத்தும் இல்லை.",
-        routeSummary: "சென்னை துறைமுகத்திலிருந்து மண்டலம் A-விற்கான உகந்த பாதை: தூரம் 18.4 கி.மீ, பயண நேரம் 52 நிமிடங்கள். பாதை பாதுகாப்பு: குறைந்த அபாயம்.",
+        weatherSummary: "சென்னை கடற்கரை வானிலை கணிப்பு: நாளை காலை தெளிவான வானிலை, 14.2 km/h வடகிழக்கு காற்று மற்றும் 1.1m அலை உயரம் இருக்கும்.",
+        safetySummary: "மண்டலம் A (North East Shelf) பாதுகாப்பு அபாய மதிப்பீடு: குறைந்த அபாயம் (LOW RISK). காற்று, அலைகள் மற்றும் எல்லைத் தூரம் பாதுகாப்பான எல்லைக்குள் உள்ளன.",
+        cycloneSummary: "வருணா புயல் தற்போது சென்னைக்கு கிழக்கு-தென்கிழக்கே 145 கி.மீ தொலைவில் வடகிழக்கு நோக்கி நகர்கிறது. எவ்வித நேரடி ஆபத்தும் இல்லை.",
+        routeSummary: "சென்னை துறைமுகத்திலிருந்து மண்டலம் A-விற்கான உகந்த பாதை: தூரம் 18.4 கி.மீ, பயண நேரம் 52 நிமிடங்கள்.",
         marineSummary: "தற்போதைய கடல் அளவுருக்கள்: கடல் பரப்பு வெப்பநிலை (SST) 28.2°C, குளோரோபில் குறியீடு 88%, நீரோட்ட வேகம் 0.8 நாட்ஸ் SW.",
-        whySummary: "மண்டலம் A உகந்த கடல் வெப்பநிலை (28.2°C), அதிக குளோரோபில் செறிவு (88%), குறைந்த அலை (1.1m) மற்றும் புயல் பாதுகாப்பு தூரம் காரணமாக பரிந்துரைக்கப்படுகிறது.",
-        unknownClarification: "மன்னிக்கவும், உங்கள் கேள்வி எனக்குப் புரியவில்லை. நாளை வானிலை, பாதுகாப்பான மீன்பிடி மண்டலங்கள், புயல் நிலை அல்லது பாதையைப் பற்றிக் கேட்க விரும்புகிறீர்களா?",
+        borderSummary: "கடல் எல்லை நிலை: உங்கள் படகு சர்வதேச எல்லைக்கோட்டிலிருந்து 38.5 கி.மீ இந்திய கடற்பகுதிக்குள் பாதுகாப்பாக உள்ளது (SAFE). மண்டலம் A முழுமையாக அனுமதிக்கப்பட்ட பகுதி.",
+        whySummary: "மண்டலம் A உகந்த வெப்பநிலை (28.2°C), அதிக குளோரோபில் (88%), குறைந்த அலை (1.1m) மற்றும் சர்வதேச எல்லைப் பாதுகாப்பு தூரம் காரணமாக பரிந்துரைக்கப்படுகிறது.",
+        unknownClarification: "மன்னிக்கவும், உங்கள் கேள்வி எனக்குப் புரியவில்லை. நாளை வானிலை, பாதுகாப்பான மண்டலங்கள், எல்லைத் தூரம் அல்லது புயல் பற்றிக் கேட்க விரும்புகிறீர்களா?",
+      },
+    },
+    border: {
+      title: "கடல் எல்லை மற்றும் தடைசெய்யப்பட்ட மண்டல விழிப்புணர்வு",
+      subtitle: "சர்வதேச எல்லைக்கோட்டை (IMBL) அறிய உதவும் முடிவு ஆதரவு அமைப்பு",
+      borderSafety: "எல்லைப் பாதுகாப்பு மதிப்பீடு",
+      proximityAlertTitle: "⚠ எல்லைப் பகுதி எச்சரிக்கை (BORDER PROXIMITY ALERT)",
+      proximityAlertText: "எல்லைப் பகுதியை நெருங்குகிறீர்கள். பாதுகாப்பான தூரத்தைப் பராமரிக்கவும்.",
+      zoneRestrictedTitle: "⚠ மண்டலம் தட்டுப்பாடு / தடைசெய்யப்பட்டது (RESTRICTED)",
+      zoneRestrictedText: "இந்த இடம் பாதுகாப்பு படைக்குரிய தடைசெய்யப்பட்ட மண்டலம் அல்லது எல்லைக்கோடு அருகில் உள்ளதால் தவிர்க்கப்பட்டுள்ளது.",
+      disclaimer: "கட்டமைக்கப்பட்ட மாதிரித் தரவு — இது சட்டப்பூர்வமான நாவிகேஷன் கருவி அல்ல",
+      distanceToIMBL: "சர்வதேச எல்லைக்கோட்டிற்கான தூரம்",
+      states: {
+        safe: "பாதுகாப்பானது (SAFE)",
+        caution: "எச்சரிக்கை தேவை (CAUTION)",
+        restricted: "தடைசெய்யப்பட்டது (RESTRICTED)",
+      },
+      layers: {
+        imbl: "சர்வதேச கடல் எல்லைக்கோடு (IMBL)",
+        territorial: "பிராந்திய கடல் எல்லை (12 நார்டிகல் மைல்கள்)",
+        restrictedZone: "கடற்படை தடைசெய்யப்பட்ட பாதுகாப்பு மண்டலம்",
       },
     },
     weather: {
@@ -489,7 +561,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ओर्का एआई समुद्री सहायक",
       subtitle: "प्रश्नों के इरादे को समझकर सटीक समुद्री व मत्स्य पालन सलाह देने वाला एआई",
-      inputPlaceholder: "मौसम, सुरक्षा, मार्ग या मत्स्य क्षेत्रों के बारे में पूछें...",
+      inputPlaceholder: "मौसम, सीमा सुरक्षा, मार्ग या मत्स्य क्षेत्रों के बारे में पूछें...",
       analyzing: "प्रश्न के उद्देश्य का विश्लेषण किया जा रहा है...",
       suggestedQuestionsTitle: "सुझाए गए प्रश्न",
       whyRecommendation: "यह सिफारिश क्यों?",
@@ -507,16 +579,40 @@ export const translations: Record<Language, TranslationSchema> = {
         q6: "चक्रवात वर्तमान में कहाँ स्थित है?",
         q7: "समुद्री स्थितियां (SST और क्लोरोफिल) कैसी हैं?",
         q8: "नमस्ते ओर्का!",
+        q9: "क्या मैं समुद्री सीमा के करीब हूँ?",
+        q10: "क्या जोन A सीमा प्रतिबंधों से सुरक्षित है?",
       },
       intents: {
         greeting: "नमस्कार कप्तान! मैं ओर्का (ORCA), आपका एआई समुद्री सहायक हूँ। आज आपकी यात्रा में मैं कैसे मदद कर सकता हूँ?",
         weatherSummary: "चेन्नई तट मौसम पूर्वानुमान: कल सुबह 14.2 किमी/घंटा उत्तर-पूर्वी हवाओं और 1.1 मीटर लहरों के साथ साफ आसमान रहेगा।",
-        safetySummary: "जोन A (North East Shelf) सुरक्षा मूल्यांकन: कम जोखिम (LOW RISK)। हवा और लहरें सुरक्षित सीमा में हैं।",
-        cycloneSummary: "चक्रवात वरुण वर्तमान में चेन्नई से 145 किमी पूर्व-दक्षिण-पूर्व में है। जोन A के लिए कोई खतरा नहीं है।",
-        routeSummary: "चेन्नई बंदरगाह से जोन A का मार्ग: दूरी 18.4 किमी, अनुमानित समय 52 मिनट। मार्ग सुरक्षा: कम जोखिम।",
-        marineSummary: "वर्तमान समुद्री पैरामीटर: समुद्री सतह तापमान (SST) 28.2°C है, क्लोरोफिल सूचकांक 88% है।",
-        whySummary: "जोन A की सिफारिश अनुकूल तापमान (28.2°C) और उच्च क्लोरोफिल (88%) के कारण की गई है।",
-        unknownClarification: "क्षमा करें, मैं समझ नहीं पाया। क्या आप कल का मौसम, सुरक्षित मत्स्य क्षेत्र या चक्रवात की स्थिति जानना चाहते हैं?",
+        safetySummary: "जोन A (North East Shelf) सुरक्षा मूल्यांकन: कम जोखिम (LOW RISK)।",
+        cycloneSummary: "चक्रवात वरुण वर्तमान में चेन्नई से 145 किमी दूर है।",
+        routeSummary: "चेन्नई बंदरगाह से जोन A का मार्ग: दूरी 18.4 किमी, समय 52 मिनट।",
+        marineSummary: "वर्तमान समुद्री पैरामीटर: समुद्री सतह तापमान (SST) 28.2°C है।",
+        borderSummary: "समुद्री सीमा स्थिति: आपकी नाव अंतरराष्ट्रीय सीमा से 38.5 किमी दूर सुरक्षित भारतीय क्षेत्र में है (SAFE)।",
+        whySummary: "जोन A की सिफारिश अनुकूल तापमान (28.2°C) और सीमा सुरक्षा के कारण की गई है।",
+        unknownClarification: "क्षमा करें, मैं समझ नहीं पाया। क्या आप सीमा दूरी या मौसम जानना चाहते हैं?",
+      },
+    },
+    border: {
+      title: "समुद्री सीमा एवं प्रतिबंधित क्षेत्र जागरूकता",
+      subtitle: "अंतर्राष्ट्रीय समुद्री सीमा (IMBL) के लिए निर्णय सहायता प्रणाली",
+      borderSafety: "सीमा सुरक्षा रेटिंग",
+      proximityAlertTitle: "⚠ सीमा निकटता चेतावनी (BORDER PROXIMITY ALERT)",
+      proximityAlertText: "आपकी नाव समुद्री सीमा के करीब पहुंच रही है। सुरक्षित दूरी बनाए रखें।",
+      zoneRestrictedTitle: "⚠ क्षेत्र अनुशंसित नहीं / प्रतिबंधित (RESTRICTED)",
+      zoneRestrictedText: "यह स्थान नौसेना के प्रतिबंधित क्षेत्र में होने के कारण सिफारिश से बाहर रखा गया है।",
+      disclaimer: "सिम्युलेटेड डेटा — यह कानूनी नेविगेशन उपकरण नहीं है",
+      distanceToIMBL: "अंतर्राष्ट्रीय सीमा रेखा (IMBL) से दूरी",
+      states: {
+        safe: "सुरक्षित (SAFE)",
+        caution: "सावधानी आवश्यक (CAUTION)",
+        restricted: "प्रतिबंधित (RESTRICTED)",
+      },
+      layers: {
+        imbl: "अंतर्राष्ट्रीय समुद्री सीमा रेखा (IMBL)",
+        territorial: "प्रादेशिक समुद्री सीमा (12 समुद्री मील)",
+        restrictedZone: "नौसेना प्रतिबंधित रक्षा क्षेत्र",
       },
     },
     weather: {
@@ -638,7 +734,7 @@ export const translations: Record<Language, TranslationSchema> = {
     ai: {
       title: "ఓర్కా AI సముద్ర సహాయకుడు",
       subtitle: "ప్రశ్నల ఉద్దేశ్యాన్ని గ్రహించి ఖచ్చితమైన సముద్ర వేట సూచనలను ఇచ్చే AI",
-      inputPlaceholder: "వాతావరణం, రక్షణ, మార్గం లేదా చేపల వేట గురించి అడగండి...",
+      inputPlaceholder: "వాతావరణం, సరిహద్దు రక్షణ, ప్రాంతాలు, మార్గం గురించి అడగండి...",
       analyzing: "ప్రశ్న ఉద్దేశ్యాన్ని విశ్లేషిస్తోంది...",
       suggestedQuestionsTitle: "సూచించబడిన ప్రశ్నలు",
       whyRecommendation: "ఈ సిఫార్సు ఎందుకు?",
@@ -656,16 +752,40 @@ export const translations: Record<Language, TranslationSchema> = {
         q6: "తుఫాను ప్రస్తుతం ఎక్కడ ఉంది?",
         q7: "సముద్ర పరిస్థితులు (SST & క్లోరోఫిల్) ఎలా ఉన్నాయి?",
         q8: "నమస్కారం ఓర్కా!",
+        q9: "నేను సముద్ర సరిహద్దుకు సమీపంలో ఉన్నానా?",
+        q10: "జోన్ A సరిహద్దు నిబంధనల నుండి సురక్షితమేనా?",
       },
       intents: {
-        greeting: "నమస్కారం కెప్టెన్! నేను ఓర్కా (ORCA), మీ AI సముద్ర సహాయకుడిని. ఈ రోజు మీ ప్రయాణంలో నేను ఎలా సహాయపడగలను?",
-        weatherSummary: "చెన్నై తీర ప్రాంత వాతావరణ అంచనా: రేపు ఉదయం 14.2 కిమీ/గం ఈశాన్య గాలులు మరియు 1.1 మీ అలల ఎత్తుతో వాతావరణం ప్రశాంతంగా ఉంటుంది.",
-        safetySummary: "జోన్ A (North East Shelf) రక్షణ అంచనా: తక్కువ ప్రమాదం (LOW RISK). గాలులు మరియు అలలు సురక్షిత పరిమితిలో ఉన్నాయి.",
-        cycloneSummary: "వరుణ తుఫాను ప్రస్తుతం చెన్నైకి ఈశాన్యం వైపు ప్రయాణిస్తోంది. జోన్ A కు ప్రమాదం లేదు.",
-        routeSummary: "చెన్నై పోర్ట్ నుండి జోన్ A కు మార్గం: దూరం 18.4 కిమీ, ప్రయాణ సమయం 52 నిమిషాలు. రక్షణ: తక్కువ ప్రమాదం.",
-        marineSummary: "ప్రస్తుత సముద్ర పారామితులు: సముద్ర ఉపరితల ఉష్ణోగ్రత 28.2°C, క్లోరోఫిల్ 88%.",
-        whySummary: "జోన్ A ఉష్ణోగ్రత (28.2°C) మరియు క్లోరోఫిల్ (88%) ఆధారంగా సిఫార్సు చేయబడింది.",
-        unknownClarification: "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు. రేపటి వాతావరణం, చేపల వేట ప్రాంతాలు లేదా తుఫాను గురించి తెలుసుకోవాలనుకుంటున్నారా?",
+        greeting: "నమస్కారం కెప్టెన్! నేను ఓర్కా (ORCA), మీ AI సముద్ర సహాయకుడిని.",
+        weatherSummary: "చెన్నై తీర ప్రాంత వాతావరణ అంచనా: రేపు ఉదయం 14.2 కిమీ/గం గాలులు.",
+        safetySummary: "జోన్ A రక్షణ అంచనా: తక్కువ ప్రమాదం (LOW RISK).",
+        cycloneSummary: "వరుణ తుఫాను చెన్నైకి 145 కిమీ దూరంలో ఉంది.",
+        routeSummary: "చెన్నై పోర్ట్ నుండి జోన్ A కు మార్గం: దూరం 18.4 కిమీ.",
+        marineSummary: "ప్రస్తుత సముద్ర పారామితులు: ఉష్ణోగ్రత 28.2°C.",
+        borderSummary: "సరిహద్దు స్థితి: మీ పడవ అంతర్జాతీయ సరిహద్దు నుండి 38.5 కిమీ దూరంలో సురక్షిత ప్రాంతంలో ఉంది (SAFE).",
+        whySummary: "జోన్ A ఉష్ణోగ్రత మరియు సరిహద్దు భద్రత ఆధారంగా సిఫార్సు చేయబడింది.",
+        unknownClarification: "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు.",
+      },
+    },
+    border: {
+      title: "సముద్ర సరిహద్దు & నిషేధిత ప్రాంత అవగాహన",
+      subtitle: "అంతర్జాతీయ సముద్ర సరిహద్దు (IMBL) అవగాహన వ్యవస్థ",
+      borderSafety: "సరిహద్దు భద్రతా రేటింగ్",
+      proximityAlertTitle: "⚠ సరిహద్దు హెచ్చరిక (BORDER PROXIMITY ALERT)",
+      proximityAlertText: "మీరు సముద్ర సరిహద్దుకు దగ్గరగా ఉన్నారు. సురక్షిత దూరం పాటించండి.",
+      zoneRestrictedTitle: "⚠ ప్రాంతం నిషేధించబడింది (RESTRICTED)",
+      zoneRestrictedText: "ఈ ప్రాంతం నావికాదళ నిషేధిత ప్రాంతం పరిధిలో ఉన్నందున మినహాయించబడింది.",
+      disclaimer: "నమూనా డేటా — ఇది అధికారిక నావిగేషన్ సాధనం కాదు",
+      distanceToIMBL: "అంతర్జాతీయ సరిహద్దు (IMBL) కి దూరం",
+      states: {
+        safe: "సురక్షితం (SAFE)",
+        caution: "జాగ్రత్త అవసరం (CAUTION)",
+        restricted: "నిషేధించబడింది (RESTRICTED)",
+      },
+      layers: {
+        imbl: "అంతర్జాతీయ సముద్ర సరిహద్దు రేఖ (IMBL)",
+        territorial: "ప్రాంతీయ సముద్ర సరిహద్దు (12 నాటికల్ మైళ్ళు)",
+        restrictedZone: "నావికాదళ రక్షణ నిషేధిత ప్రాంతం",
       },
     },
     weather: {
@@ -687,7 +807,7 @@ export const translations: Record<Language, TranslationSchema> = {
       subtitle: "క్లోరోఫిల్ మరియు సముద్ర ఉష్ణోగ్రత ఆధారిత వేట ప్రాంతాలు",
       suitabilityScore: "చేపల వేట అనుకూలత",
       chlorophyll: "క్లోరోఫిల్ సూచిక",
-      tempGradient: "ఉష్ణోగ్రత మార్పు (SST)",
+      tempGradient: "ఉష్ணోగ్రత మార్పు (SST)",
       oceanCurrent: "సముద్ర ప్రవాహ వేగం",
       historicalSuitability: "చారిత్రక చేపల దిగుబడి",
       weatherFactor: "స్థానిక వాతావరణం",

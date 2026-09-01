@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   Navigation,
   Compass,
+  Shield,
+  Info,
 } from 'lucide-react';
 
 interface AIAssistantViewProps {
@@ -142,7 +144,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
   const suggestedQuestions = [
     t.ai.questions.q1,
     t.ai.questions.q2,
-    t.ai.questions.q3,
+    t.ai.questions.q9,
     t.ai.questions.q4,
     t.ai.questions.q5,
     t.ai.questions.q6,
@@ -173,7 +175,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
 
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-800">
           <Zap className="w-4 h-4 text-cyan-400" />
-          <span>Multi-Intent & Context AI Active</span>
+          <span>Multi-Intent & Border Protection AI Active</span>
         </div>
       </div>
 
@@ -252,7 +254,36 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
 
                 {/* DYNAMIC INTENT CARDS RENDERING */}
 
-                {/* 1. GREETING CARD */}
+                {/* 1. BORDER PROTECTION INTENT CARD */}
+                {rec.intent === 'BORDER' && rec.borderData && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
+                    <div className="flex items-center justify-between font-bold text-slate-200">
+                      <span className="flex items-center gap-2 text-cyan-300">
+                        <Shield className="w-4 h-4 text-cyan-400" />
+                        <span>{t.border.borderSafety}: <strong className="uppercase text-emerald-400">{rec.borderData.status}</strong></span>
+                      </span>
+                      <span className="font-mono text-cyan-300">IMBL: {rec.borderData.distanceToIMBLKm} km away</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-slate-300">
+                      <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                        <span className="text-slate-400 text-[11px] block">Nearest Safe Fishing Sector</span>
+                        <strong className="text-emerald-400 text-xs">{rec.borderData.nearestSafeZone}</strong>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-950 border border-red-500/40">
+                        <span className="text-red-400 text-[11px] block font-bold">Prohibited Sector</span>
+                        <strong className="text-slate-300 text-[11px]">{rec.borderData.restrictedZoneName}</strong>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-1">
+                      <Info className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>{t.border.disclaimer}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. GREETING CARD */}
                 {rec.intent === 'GREETING' && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3">
                     <span className="text-xs font-bold text-slate-300">Suggested Quick Actions:</span>
@@ -265,24 +296,24 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         <span>Find Best Fishing Zone</span>
                       </button>
                       <button
+                        onClick={() => handleSend(t.ai.questions.q9)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Check Border Distance</span>
+                      </button>
+                      <button
                         onClick={() => handleSend(t.ai.questions.q3)}
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
                       >
                         <CloudSun className="w-3.5 h-3.5" />
                         <span>Check Weather Forecast</span>
                       </button>
-                      <button
-                        onClick={() => handleSend(t.ai.questions.q2)}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 border border-slate-700 cursor-pointer"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Check Safety & Waves</span>
-                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* 2. WEATHER CARD */}
+                {/* 3. WEATHER CARD */}
                 {rec.intent === 'WEATHER' && rec.weatherData && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-sky-500/30 text-xs">
                     <div className="p-2.5 rounded-lg bg-slate-950">
@@ -304,7 +335,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 3. SAFETY CARD */}
+                {/* 4. SAFETY CARD */}
                 {rec.intent === 'SAFETY' && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-3">
                     <div className="flex items-center justify-between">
@@ -326,7 +357,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 4. CYCLONE CARD */}
+                {/* 5. CYCLONE CARD */}
                 {rec.intent === 'CYCLONE' && rec.cycloneData && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-red-500/40 space-y-2 text-xs">
                     <div className="flex items-center justify-between text-red-400 font-bold">
@@ -347,7 +378,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 5. ROUTE CARD */}
+                {/* 6. ROUTE CARD */}
                 {rec.intent === 'ROUTE' && rec.routeData && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3 text-xs">
                     <div className="flex items-center justify-between font-bold text-cyan-300">
@@ -370,7 +401,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 6. MARINE CONDITIONS CARD */}
+                {/* 7. MARINE CONDITIONS CARD */}
                 {rec.intent === 'MARINE_CONDITIONS' && rec.marineData && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-teal-500/30 text-xs">
                     <div className="p-2.5 rounded-lg bg-slate-950">
@@ -392,14 +423,14 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                   </div>
                 )}
 
-                {/* 7. FISHING RECOMMENDATION CARD */}
+                {/* 8. FISHING RECOMMENDATION CARD */}
                 {(rec.intent === 'FISHING_ZONE' ||
                   rec.intent === 'FISHING_RECOMMENDATION' ||
                   rec.intent === 'GENERAL_MARINE' ||
                   rec.intent === 'UNKNOWN') && (
                   <>
                     {rec.recommendedZone && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-gradient-to-br from-slate-900 to-cyan-950/50 border border-cyan-500/30 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-4 rounded-xl bg-gradient-to-br from-slate-900 to-cyan-950/50 border border-cyan-500/30 text-xs">
                         <div>
                           <span className="text-slate-400 block text-[11px] font-medium">
                             {t.dashboard.recommendedZone}
@@ -418,6 +449,14 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         </div>
                         <div>
                           <span className="text-slate-400 block text-[11px] font-medium">
+                            {t.border.borderSafety}
+                          </span>
+                          <strong className="text-emerald-400 text-sm font-bold block mt-0.5 uppercase">
+                            {rec.borderSafety}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[11px] font-medium">
                             {t.ai.safetyRisk}
                           </span>
                           <strong className="text-emerald-400 text-sm font-bold block mt-0.5 uppercase">
@@ -426,9 +465,9 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         </div>
                         <div>
                           <span className="text-slate-400 block text-[11px] font-medium">
-                            {t.dashboard.distance} & {t.dashboard.travelTime}
+                            {t.dashboard.distance} & Time
                           </span>
-                          <strong className="text-slate-200 text-sm font-mono block mt-0.5">
+                          <strong className="text-slate-200 text-xs font-mono block mt-0.5">
                             {rec.distanceKm} km ({rec.travelTimeMin} min)
                           </strong>
                         </div>
@@ -504,7 +543,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({
                         <div className="flex items-start gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
                           <p>
-                            <strong className="text-amber-300">Cyclone Safety Radius:</strong>{' '}
+                            <strong className="text-amber-300">Cyclone & Border Safety Margin:</strong>{' '}
                             {rec.whyExplanation.cycloneNote}
                           </p>
                         </div>

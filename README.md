@@ -1,63 +1,57 @@
 # 🌊 ORCA — AI-Powered Marine & Fishing Intelligence Prototype
 
 > **Smart India Hackathon (SIH) Marine Fishing Solution Prototype**  
-> An AI-powered marine assistant enabling fishermen to navigate safely, locate high-yield potential fishing zones, receive 48-hour weather forecasts, and operate offline using local intelligence packages.
+> An AI-powered marine assistant enabling fishermen to navigate safely, locate high-yield potential fishing zones, monitor maritime boundaries & border proximity, receive 48-hour weather forecasts, and operate offline using local intelligence packages.
 
 ---
 
 ## 🚀 Key Features
 
-### 1. 🌐 Regional Language Support (தமிழ், English, हिन्दी, తెలుగు)
+### 1. 🛡️ Border Protection & Maritime Boundary Awareness
+- **Maritime Boundary Map Layer**: Demarcates International Maritime Boundary Line (IMBL), 12nm Territorial Waters limit, and Prohibited Naval Defense Zones on the interactive Leaflet map.
+- **Vessel Border Proximity Alert**: Triggers `⚠ BORDER PROXIMITY ALERT` warnings when vessels approach boundary zones.
+  - Tamil: *"எல்லைப் பகுதியை நெருங்குகிறீர்கள். பாதுகாப்பான தூரத்தைப் பராமரிக்கவும்."*
+  - English: *"Your current vessel location is approaching a maritime boundary. Maintain a safe distance and verify permitted fishing sectors."*
+- **Restricted Zone Exclusion**: Excludes zones inside or too close to restricted sectors (`⚠ ZONE NOT RECOMMENDED / RESTRICTED`).
+- **Border Safety Metric**: Categorizes sectors into 🟢 **SAFE**, 🟡 **CAUTION**, and 🔴 **RESTRICTED / EXCLUDED**.
+- **Decision Support Disclaimer**: Clearly labeled simulated datasets for demonstration purposes.
+
+### 2. 🌐 Regional Language Support (தமிழ், English, हिन्दी, తెలుగు)
 - Complete UI translation dictionary for English, Tamil, Hindi, and Telugu.
-- Built-in Tamil voice/text preset demo query:
-  > *"நாளை காலை மீன்பிடிக்க எந்த இடத்திற்கு செல்லலாம்?"*
+- Built-in Tamil voice/text preset demo queries:
+  - *"நாளை காலை மீன்பிடிக்க எந்த இடத்திற்கு செல்லலாம்?"*
+  - *"நான் எல்லைக்கு அருகில் உள்ளேனா?"*
 - Localized AI recommendations, weather alerts, safety explanations, and map markers.
 
-### 2. 📊 Live Coastal Telemetry Dashboard
-- Real-time marine metrics: Air Temp, Wind Speed/Direction, Wave Height, Sea Surface Temperature (SST), Ocean Current, and Weather condition summaries.
-- Instant Recommended Fishing Zone highlight card (Zone A — North East Shelf, 87% suitability, 18.4 km, 52 min travel time).
-- Active Cyclone VARUNA alert indicator.
+### 3. 🤖 Context-Aware Multi-Intent AI Assistant
+- Recognizes 10+ distinct user intents (`GREETING`, `WEATHER`, `SAFETY`, `CYCLONE`, `ROUTE`, `BORDER`, `FISHING_ZONE`, `WHY_EXPLANATION`).
+- Renders specialized UI cards (Weather forecast metrics, Safety risk gauges, Cyclone tracking, Route navigation, Border proximity metrics).
+- Resolves conversation context across turns (e.g. *"Where should I fish?"* ➔ *"Is it safe?"* ➔ *"Show me the route"*).
 
-### 3. 🗺️ Interactive Dark Marine Map
-- High-resolution dark marine map powered by Leaflet & CARTO Dark tiles.
+### 4. 📊 Live Coastal Telemetry Dashboard
+- Real-time marine metrics: Air Temp, Wind Speed/Direction, Wave Height, Sea Surface Temperature (SST), Ocean Current, Weather condition summaries, and Border Safety status.
+- Instant Recommended Fishing Zone highlight card (Zone A — North East Shelf, 87% suitability, 18.4 km distance, 52 min travel time).
+
+### 5. 🗺️ Interactive Dark Marine Map
+- Powered by Leaflet & CARTO Dark tiles.
 - Interactive Layer Toggles:
   - **Fishing Zones** (Green 87%, Yellow 64%, Red 42%, Red 29%).
+  - **Maritime Boundaries** (IMBL Red-Dashed Line, Territorial Buffer, Prohibited Defense Sector).
   - **Optimized Navigation Route** (Chennai Harbor ➔ Target Zone).
   - **Vessel Marker** with pulsing radar beacon.
   - **Personal Safety Radius Bubble** (10 km – 50 km configurable perimeter).
   - **Cyclone Tracking** with danger radius (65 km) and forecasted trajectory path.
 
-### 4. 🤖 ORCA AI Assistant
-- Conversational marine AI interface.
-- Pre-populated suggested question chips in regional languages.
-- Real-time processing animation (*"Analyzing marine conditions, ocean currents & cyclone telemetry..."*).
-- Structured recommendation output cards with suitability scores, distance, travel time, and safety risk.
-- **Expandable "Why this recommendation?" Section**: Breaks down SST, Chlorophyll density, Weather, Waves, and Cyclone safety margins.
-
-### 5. 🌦️ 48-Hour Weather Forecast & Safety Timeline
+### 6. 🌦️ 48-Hour Weather Forecast & Safety Timeline
 - Coastal location switcher: **Chennai**, **Kochi**, **Visakhapatnam**, and **Thoothukudi**.
 - 48-Hour Safety Timeline categorizing 3-hour windows (`06:00 Safe`, `09:00 Safe`, `12:00 Moderate`, `15:00 Increasing Wind`, `18:00 High Caution`).
 - Recharts visualizations for Wind Speed, Wave Swell, and Rain Probability.
 
-### 6. 🎣 Potential Fishing Zone (PFZ) Intelligence
-- Chlorophyll and SST driven suitability scoring model.
-- Factor breakdown bars: SST (91%), Chlorophyll (88%), Ocean Current (82%), Weather (90%), Safety (85%).
-- Travel duration and fuel efficiency estimates.
-
-### 7. 🛡️ Safety & Cyclone Hazard Warning Matrix
-- Risk classification (LOW / MODERATE / HIGH / EXTREME).
-- Sub-factor breakdown across Wind, Waves, Rain, Current, Cyclone Proximity, and Visibility.
-- Configurable Vessel Safety Radius Slider with real-time hazard overlap detection.
-
-### 8. 📦 48-Hour Mission Package & Offline Mode
+### 7. 📦 48-Hour Mission Package & Offline Mode
 - Mode Toggle: **🟢 ONLINE (Cloud Active)** vs **🟠 OFFLINE (Local 48h Package Active)**.
 - Operates 100% locally in browser with zero internet dependency.
 - "Sync & Generate Mission Package" button with progress animation.
 - "Download Package (.JSON)" button exporting offline mission data bundles.
-
-### 9. 🧠 Multi-Agent System & Data Fusion
-- Animated multi-agent data flow: User Query ➔ ORCA Coordinator ➔ (Weather, Marine, Fishing, Safety Agents) ➔ Data Fusion ➔ Recommendation Engine.
-- Integrates data feeds from ISRO Ocean Satellite, IMD Coastal Radar, INCOIS Wave Models, PFZ Bulletins, and Marine Vessel Sensors.
 
 ---
 
@@ -80,16 +74,16 @@ graph TD
     Coordinator --> WeatherAgent[Weather Agent]
     Coordinator --> MarineAgent[Marine Agent]
     Coordinator --> FishingAgent[Fishing Intelligence Agent]
-    Coordinator --> SafetyAgent[Safety Agent]
+    Coordinator --> SafetyAgent[Safety & Border Agent]
 
     WeatherAgent --> Fusion[Data Fusion Layer]
     MarineAgent --> Fusion
     FishingAgent --> Fusion
     SafetyAgent --> Fusion
 
-    Fusion --> Sources[(ISRO / IMD / INCOIS Feeds)]
+    Fusion --> Sources[(ISRO / IMD / INCOIS / IMBL Feeds)]
     Fusion --> Engine[Recommendation Engine]
-    Engine --> Output[Localized Recommendation & Map Route]
+    Engine --> Output[Localized Recommendation, Map Route & Border Alerts]
 ```
 
 ---
